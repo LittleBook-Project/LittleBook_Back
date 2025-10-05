@@ -20,6 +20,16 @@ git clone https://github.com/MOUNIAT-1002/LittleBook_Back.git
 ```
 
 ---
+## ⚙️ Compilation et execution 
+### 1. Compilation
+```bash
+mvn clean install
+```
+### 2. Execution
+```bash
+mvn spring-boot:run
+```
+---
 
 ## 🧩 Modèle de donnée
 ![Modèle de donnée de l'application](images/model_donnees/md_v1.png)
