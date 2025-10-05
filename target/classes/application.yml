@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: littlebook-back
+
+  main:
+    banner-mode: console       # garde l’affichage de la bannière Spring Boot
+    lazy-initialization: false # charge tout au démarrage (bon pour dev)
+
+  output:
+    ansi:
+      enabled: always          # couleurs dans la console
+
+server:
+  port: 8080                   # port du serveur
+  error:
+    include-message: always    # utile pour debug les erreurs
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
