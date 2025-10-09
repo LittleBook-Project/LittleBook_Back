@@ -11,24 +11,19 @@ spring:
       enabled: always          # couleurs dans la console
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/littlebook 
+    url: jdbc:postgresql://db.epgxaozzqwdlbwtuefye.supabase.co:5432/postgres
     username: postgres
-    password: postgres # le mot de passe est à changer
+    password: Need2eatandsleep@diner
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: none  # le schéma est défini dans schema.sql
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
 
 server:
   port: 8080                   # port du serveur
