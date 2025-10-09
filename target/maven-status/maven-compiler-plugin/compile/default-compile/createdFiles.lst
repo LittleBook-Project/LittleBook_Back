@@ -1,0 +1,6 @@
+com\littlebook\repository\UserRepository.class
+com\littlebook\service\UserService.class
+com\littlebook\LittlebookApplication.class
+com\littlebook\entity\UserEntity.class
+com\littlebook\controller\UserController.class
+com\littlebook\service\impl\UserServiceImpl.class
