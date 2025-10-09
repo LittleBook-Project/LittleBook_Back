@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Entity
 @Table(name = "users")
 public class UserEntity {
@@ -22,6 +24,7 @@ public class UserEntity {
     @Column(name = "profile_creation_date", nullable = false)
     private LocalDate profileCreationDate = LocalDate.now();
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "password", nullable = false)
     private String password;
 
