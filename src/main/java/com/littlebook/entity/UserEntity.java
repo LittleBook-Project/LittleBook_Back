@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.littlebook.enums.Role;
 
 @Entity
 @Table(name = "users")
@@ -28,8 +29,9 @@ public class UserEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(nullable = false)
-    private String role;
+    @Column(name = "role", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     // Getters & Setters
     public UUID getUuid() {
@@ -67,10 +69,10 @@ public class UserEntity {
         this.profileCreationDate = profileCreationDate;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 }
