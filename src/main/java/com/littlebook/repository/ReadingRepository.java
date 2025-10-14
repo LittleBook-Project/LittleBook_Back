@@ -2,7 +2,6 @@ package com.littlebook.repository;
 
 import com.littlebook.entity.ReadingEntity;
 import com.littlebook.entity.UserEntity;
-import com.littlebook.entity.BookEntity;
 import com.littlebook.enums.ReadingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -30,13 +29,15 @@ public interface ReadingRepository extends JpaRepository<ReadingEntity, Long> {
      * Récupère toutes les lectures d'un utilisateur avec un statut donné
      */
     @Query("SELECT r FROM ReadingEntity r WHERE r.user.uuid = :userUuid AND r.status = :status")
-    List<ReadingEntity> findByUserUuidAndStatus(@Param("userUuid") java.util.UUID userUuid, @Param("status") ReadingStatus status);
+    List<ReadingEntity> findByUserUuidAndStatus(@Param("userUuid") java.util.UUID userUuid,
+            @Param("status") ReadingStatus status);
 
     /**
      * Récupère une lecture spécifique d'un utilisateur pour un livre
      */
     @Query("SELECT r FROM ReadingEntity r WHERE r.user.uuid = :userUuid AND r.book.isbn = :isbn")
-    Optional<ReadingEntity> findByUserUuidAndBookIsbn(@Param("userUuid") java.util.UUID userUuid, @Param("isbn") String isbn);
+    Optional<ReadingEntity> findByUserUuidAndBookIsbn(@Param("userUuid") java.util.UUID userUuid,
+            @Param("isbn") String isbn);
 
     /**
      * Récupère toutes les lectures d'un livre par ISBN

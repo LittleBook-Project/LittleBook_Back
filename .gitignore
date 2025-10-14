@@ -64,3 +64,5 @@ firebase-*.json
 # Garde les fichiers d'exemple
 !*.example
 >>>>>>> 20b859e7a8659654446ad71c9170ece72abaa127
+
+target/                      # dossier de build Maven
