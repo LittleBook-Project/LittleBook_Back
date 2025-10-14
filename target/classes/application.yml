@@ -3,12 +3,12 @@ spring:
     name: littlebook-back
 
   main:
-    banner-mode: console # garde l’affichage de la bannière Spring Boot
+    banner-mode: console       # garde l’affichage de la bannière Spring Boot
     lazy-initialization: false # charge tout au démarrage (bon pour dev)
 
   output:
     ansi:
-      enabled: always # couleurs dans la console
+      enabled: always          # couleurs dans la console
 
   datasource:
     url: jdbc:postgresql://db.epgxaozzqwdlbwtuefye.supabase.co:5432/postgres?sslmode=require
@@ -26,17 +26,13 @@ spring:
         format_sql: true
 
 server:
-  port: 8080 # port du serveur
+  port: 8080                   # port du serveur
   error:
-    include-message: always # utile pour debug les erreurs
+    include-message: always    # utile pour debug les erreurs
+
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info
-
-app:
-  firebase: # config Firebase
-    credentials-path: ${FIREBASE_CREDENTIALS}
-    project-id: ${FIREBASE_PROJECT_ID}

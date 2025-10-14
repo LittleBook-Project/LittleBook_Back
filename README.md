@@ -8,7 +8,7 @@
 - [Spring Boot 3.x](https://spring.io/projects/spring-boot) – framework backend
 - [Lombok](https://projectlombok.org/) – simplification du code (getters, setters, constructeurs)
 - [JUnit 5](https://junit.org/junit5/) – tests unitaires et d’intégration
-- [SQL Database](https://www.mysql.com/) – base de données relationnelle (MySQL, PostgreSQL…)
+- [Supabase](https://supabase.com) – base de données relationnelle (PostgreSQL)
 - [Firebase](https://firebase.google.com/) – services cloud (authentification, notifications, storage…)
 - [Open library](https://openlibrary.org/developers/api) - Récupération de l'ensemble des livres, genre, ...
 
