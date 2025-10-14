@@ -52,4 +52,33 @@ public class BookController {
         BookEntity savedBook = bookService.saveBook(book);
         return ResponseEntity.ok(savedBook);
     }
+
+    /**
+     * Test direct de l'API OpenLibrary (pour debug)
+     */
+    @GetMapping("/test-openlibrary/{isbn}")
+    public ResponseEntity<?> testOpenLibrary(@PathVariable String isbn) {
+        try {
+            Optional<BookEntity> book = bookService.getBookByIsbn(isbn);
+            if (book.isPresent()) {
+                return ResponseEntity.ok(java.util.Map.of(
+                    "success", true,
+                    "source", "OpenLibrary API",
+                    "book", book.get()
+                ));
+            } else {
+                return ResponseEntity.ok(java.util.Map.of(
+                    "success", false,
+                    "message", "Livre non trouvé sur OpenLibrary",
+                    "isbn", isbn
+                ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.ok(java.util.Map.of(
+                "success", false,
+                "error", e.getMessage(),
+                "isbn", isbn
+            ));
+        }
+    }
 }

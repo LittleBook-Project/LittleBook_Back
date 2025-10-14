@@ -3,7 +3,7 @@ package com.littlebook.dto.openlibrary;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -33,5 +33,15 @@ public class OpenLibraryBookResponse {
             return books.values().iterator().next();
         }
         return null;
+    }
+    
+    /**
+     * Ajoute un livre à la réponse
+     */
+    public void addBook(String key, OpenLibraryBook book) {
+        if (this.books == null) {
+            this.books = new HashMap<>();
+        }
+        this.books.put(key, book);
     }
 }
