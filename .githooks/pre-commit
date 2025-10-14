@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Liste des fichiers stagés (ajoutés/modifiés)
+STAGED=$(git diff --cached --name-only)
+[ -z "${STAGED}" ] && exit 0
+
+########################################
+# 1) BLOCAGE PAR NOM DE FICHIER
+# (ne bloque PAS tous les .json, seulement des patterns sensibles)
+########################################
+if echo "${STAGED}" | grep -Ei \
+  '(firebase.*service.*account.*\.json|service[-_]?account.*\.json|.*adminsdk.*\.json|.*firebase.*private.*key.*\.json)$' \
+  >/dev/null; then
+  echo "⛔ Commit bloqué : fichier JSON de service Firebase détecté (nom de fichier suspect)."
+  echo "   ➜ Place ce fichier hors du dépôt (ex: ~/littlebook/secrets/firebase-sa.json) et utilise FIREBASE_CREDENTIALS."
+  exit 1
+fi
+
+########################################
+# 2) BLOCAGE PAR CONTENU
+# (détecte les secrets même si le nom n'est pas parlant)
+########################################
+PATCH=$(git diff --cached)
+
+# Indices typiques d'une clé de compte de service GCP/Firebase
+if echo "${PATCH}" | grep -E '"type"\s*:\s*"service_account"' -q \
+  || echo "${PATCH}" | grep -E '"private_key"\s*:\s*".*BEGIN PRIVATE KEY' -q \
+  || echo "${PATCH}" | grep -E '"client_email"\s*:\s*".*@.*\.iam\.gserviceaccount\.com"' -q \
+  || echo "${PATCH}" | grep -E '"project_id"\s*:\s*"[a-z0-9\-]+"' -q; then
+  echo "⛔ Commit bloqué : contenu ressemblant à une clé Firebase/GCP détecté."
+  echo "   ➜ Ne commitez pas de clés. Stockez-les hors repo et passez le chemin via variables d'environnement."
+  exit 1
+fi
+
+exit 0

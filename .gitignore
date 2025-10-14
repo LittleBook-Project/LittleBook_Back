@@ -1,0 +1,15 @@
+# === Secrets & env ===
+/secrets/                       # dossier local où chaque dev range sa clé
+!/secrets/.keep                 # fichier vide pour garder le dossier dans le repo
+
+# Clés Firebase probables (où qu’elles se trouvent)
+*service-account*.json
+*firebase*-adminsdk*.json
+firebase-*.json
+
+# Fichiers d'environnement
+.env
+.env.*
+
+# Garde les fichiers d'exemple
+!*.example
