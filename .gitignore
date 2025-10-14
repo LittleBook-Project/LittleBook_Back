@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Maven
 target/
 pom.xml.tag
@@ -46,3 +47,20 @@ application-*.yml
 
 # JVM Crash Logs
 hs_err_pid*
+=======
+# === Secrets & env ===
+/secrets/                       # dossier local où chaque dev range sa clé
+!/secrets/.keep                 # fichier vide pour garder le dossier dans le repo
+
+# Clés Firebase probables (où qu’elles se trouvent)
+*service-account*.json
+*firebase*-adminsdk*.json
+firebase-*.json
+
+# Fichiers d'environnement
+.env
+.env.*
+
+# Garde les fichiers d'exemple
+!*.example
+>>>>>>> 20b859e7a8659654446ad71c9170ece72abaa127

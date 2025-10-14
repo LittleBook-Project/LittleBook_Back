@@ -35,6 +35,19 @@
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
 
+    <!-- Security -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
+     <!-- Firebase Admin SDK -->
+    <dependency>
+      <groupId>com.google.firebase</groupId>
+      <artifactId>firebase-admin</artifactId>
+      <version>9.3.0</version>
+    </dependency>
+
     <!-- Validation Jakarta -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -76,6 +89,20 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Spring Security Test -->
+    <dependency> 
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Mockito -->
+    <dependency> 
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    
     <!-- Spring Security -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -85,16 +112,13 @@
 
   <build>
     <plugins>
-      <!-- Compile Java 17, désactive les annotation processors (évite le crash Lombok) -->
+      <!-- Java 17 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.11.0</version>
         <configuration>
           <release>17</release>
-          <compilerArgs>
-            <arg>-proc:none</arg>
-          </compilerArgs>
         </configuration>
       </plugin>
 
