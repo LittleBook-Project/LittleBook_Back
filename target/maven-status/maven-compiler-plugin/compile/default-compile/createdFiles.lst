@@ -1,4 +1,5 @@
 com\littlebook\repository\UserRepository.class
+com\littlebook\config\CorsConfig.class
 com\littlebook\controller\ReadingController$AddBookToReadingRequest.class
 com\littlebook\enums\ReadingStatus.class
 com\littlebook\service\UserService.class
@@ -7,6 +8,8 @@ com\littlebook\service\BookService.class
 com\littlebook\dto\openlibrary\OpenLibraryBook.class
 com\littlebook\dto\openlibrary\OpenLibraryBookResponse.class
 com\littlebook\entity\UserEntity.class
+com\littlebook\config\FirebaseConfig.class
+com\littlebook\security\SecurityConfig.class
 com\littlebook\dto\openlibrary\OpenLibraryCover.class
 com\littlebook\enums\Role.class
 com\littlebook\controller\ReadingController$ReadingStatsResponse.class
@@ -17,8 +20,10 @@ com\littlebook\controller\ReviewController.class
 com\littlebook\repository\ReviewRepository.class
 com\littlebook\controller\ReviewController$UpdateReviewRequest.class
 com\littlebook\entity\ReadingEntity.class
+com\littlebook\security\FirebaseTokenFilter.class
 com\littlebook\controller\ReviewController$CreateReviewRequest.class
 com\littlebook\repository\BookRepository.class
+com\littlebook\config\CorsConfig$1.class
 com\littlebook\entity\ReviewEntity.class
 com\littlebook\LittlebookApplication.class
 com\littlebook\controller\BookController.class
@@ -27,7 +32,7 @@ com\littlebook\dto\openlibrary\OpenLibraryAuthor.class
 com\littlebook\controller\UserController.class
 com\littlebook\dto\openlibrary\OpenLibraryPublisher.class
 com\littlebook\service\ReadingService.class
-com\littlebook\config\SecurityConfig.class
+com\littlebook\api\AuthController.class
 com\littlebook\entity\BookEntity.class
 com\littlebook\service\ReviewService.class
 com\littlebook\controller\ReviewController$BookStatsResponse.class
