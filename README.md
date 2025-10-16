@@ -20,7 +20,22 @@
 
 ```bash
 git clone https://github.com/MOUNIAT-1002/LittleBook_Back.git
+cd LittleBook_Back
 ```
+
+### 2. Activer les Git hooks (protection secrets)
+
+**Une seule fois après le clone :**
+
+```bash
+# Sur Linux/Mac
+./setup-hooks.sh
+
+# Sur Windows (PowerShell)
+.\setup-hooks.ps1
+```
+
+> ⚠️ **Important** : Les hooks empêchent de commiter accidentellement des secrets Firebase.
 
 ---
 
