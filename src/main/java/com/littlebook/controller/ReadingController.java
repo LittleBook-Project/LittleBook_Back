@@ -1,6 +1,7 @@
 package com.littlebook.controller;
 
 import com.littlebook.entity.ReadingEntity;
+import com.littlebook.dto.ReadingDTO;
 import com.littlebook.enums.ReadingStatus;
 import com.littlebook.service.ReadingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,7 @@ public class ReadingController {
                 request.getBookIsbn(), 
                 request.getStatus()
             );
-            return ResponseEntity.status(HttpStatus.CREATED).body(reading);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(reading));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -56,7 +57,7 @@ public class ReadingController {
                 bookIsbn, 
                 request.getStatus()
             );
-            return ResponseEntity.ok(reading);
+            return ResponseEntity.ok(toDTO(reading));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -176,6 +177,21 @@ public class ReadingController {
         );
         
         return ResponseEntity.ok(stats);
+    }
+
+    // --- Méthode utilitaire pour transformer une ReadingEntity en ReadingDTO ---
+    private ReadingDTO toDTO(ReadingEntity entity) {
+        ReadingDTO dto = new ReadingDTO();
+        dto.setId(entity.getId());
+        dto.setReadingDate(entity.getReadingDate());
+        dto.setStatus(entity.getStatus());
+        if (entity.getUser() != null && entity.getUser().getUuid() != null) {
+            dto.setUserUuid(entity.getUser().getUuid().toString());
+        }
+        if (entity.getBook() != null && entity.getBook().getIsbn() != null) {
+            dto.setBookIsbn(entity.getBook().getIsbn());
+        }
+        return dto;
     }
 
     // --- Classes internes pour les DTOs ---

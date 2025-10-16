@@ -6,7 +6,6 @@ import com.littlebook.entity.BookEntity;
 import com.littlebook.enums.ReadingStatus;
 import com.littlebook.repository.ReadingRepository;
 import com.littlebook.repository.UserRepository;
-import com.littlebook.repository.BookRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -31,10 +30,11 @@ public class ReadingService {
     private UserRepository userRepository;
     
     @Autowired
-    private BookRepository bookRepository;
+    private BookService bookService;
 
     /**
      * Ajoute un livre à la liste de lecture d'un utilisateur
+     * Si le livre n'existe pas en base, il sera automatiquement récupéré depuis OpenLibrary et sauvegardé
      */
     public ReadingEntity addBookToReading(UUID userUuid, String bookIsbn, ReadingStatus status) {
         // Vérifie si l'utilisateur existe
@@ -43,10 +43,16 @@ public class ReadingService {
             throw new IllegalArgumentException("Utilisateur introuvable");
         }
 
-        // Vérifie si le livre existe
-        Optional<BookEntity> book = bookRepository.findById(bookIsbn);
+        // Vérifie que l'ISBN existe bien sur OpenLibrary
+        boolean isbnExists = bookService.isIsbnValidOnOpenLibrary(bookIsbn);
+        if (!isbnExists) {
+            throw new IllegalArgumentException("ISBN inexistant sur OpenLibrary. Impossible d'ajouter une lecture pour un livre inconnu.");
+        }
+
+        // Récupère le livre (depuis la base ou OpenLibrary)
+        Optional<BookEntity> book = bookService.getBookByIsbn(bookIsbn);
         if (book.isEmpty()) {
-            throw new IllegalArgumentException("Livre introuvable");
+            throw new IllegalArgumentException("Livre introuvable. Vérifiez l'ISBN ou effectuez d'abord une recherche.");
         }
 
         // Vérifie si l'utilisateur n'a pas déjà une lecture pour ce livre
@@ -61,7 +67,7 @@ public class ReadingService {
         reading.setStatus(status);
 
         ReadingEntity savedReading = readingRepository.save(reading);
-        logger.info("Livre {} ajouté à la liste de lecture de l'utilisateur {} avec le statut {}", 
+        logger.info("✅ Livre {} ajouté à la liste de lecture de l'utilisateur {} avec le statut {}", 
                    bookIsbn, userUuid, status);
         
         return savedReading;

@@ -2,6 +2,8 @@ package com.littlebook.entity;
 
 import jakarta.persistence.*;
 import com.littlebook.enums.ReadingStatus;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDate;
 
 @Entity
@@ -16,7 +18,8 @@ public class ReadingEntity {
     private LocalDate readingDate = LocalDate.now();
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "status", nullable = false, columnDefinition = "reading_status")
     private ReadingStatus status;
 
     // Relations

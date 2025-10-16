@@ -1,6 +1,7 @@
 package com.littlebook.controller;
 
 import com.littlebook.entity.ReviewEntity;
+import com.littlebook.dto.ReviewDTO;
 import com.littlebook.service.ReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -35,7 +36,7 @@ public class ReviewController {
                 request.getDescription(), 
                 request.getRating()
             );
-            return ResponseEntity.status(HttpStatus.CREATED).body(review);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(review));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -55,7 +56,7 @@ public class ReviewController {
                 request.getDescription(), 
                 request.getRating()
             );
-            return ResponseEntity.ok(review);
+            return ResponseEntity.ok(toDTO(review));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -82,9 +83,9 @@ public class ReviewController {
      * GET /api/reviews/{reviewId}
      */
     @GetMapping("/{reviewId}")
-    public ResponseEntity<ReviewEntity> getReview(@PathVariable Long reviewId) {
+    public ResponseEntity<ReviewDTO> getReview(@PathVariable Long reviewId) {
         Optional<ReviewEntity> review = reviewService.getReviewById(reviewId);
-        return review.map(ResponseEntity::ok)
+        return review.map(r -> ResponseEntity.ok(toDTO(r)))
                     .orElse(ResponseEntity.notFound().build());
     }
 
@@ -93,9 +94,9 @@ public class ReviewController {
      * GET /api/reviews/book/{isbn}
      */
     @GetMapping("/book/{isbn}")
-    public ResponseEntity<List<ReviewEntity>> getReviewsByBook(@PathVariable String isbn) {
+    public ResponseEntity<List<ReviewDTO>> getReviewsByBook(@PathVariable String isbn) {
         List<ReviewEntity> reviews = reviewService.getReviewsByBook(isbn);
-        return ResponseEntity.ok(reviews);
+        return ResponseEntity.ok(reviews.stream().map(this::toDTO).toList());
     }
 
     /**
@@ -103,9 +104,25 @@ public class ReviewController {
      * GET /api/reviews/user/{userUuid}
      */
     @GetMapping("/user/{userUuid}")
-    public ResponseEntity<List<ReviewEntity>> getReviewsByUser(@PathVariable UUID userUuid) {
+    public ResponseEntity<List<ReviewDTO>> getReviewsByUser(@PathVariable UUID userUuid) {
         List<ReviewEntity> reviews = reviewService.getReviewsByUser(userUuid);
-        return ResponseEntity.ok(reviews);
+        return ResponseEntity.ok(reviews.stream().map(this::toDTO).toList());
+    }
+
+    // --- Méthode utilitaire pour transformer une ReviewEntity en ReviewDTO ---
+    private ReviewDTO toDTO(ReviewEntity entity) {
+        ReviewDTO dto = new ReviewDTO();
+        dto.setId(entity.getId());
+        dto.setDescription(entity.getDescription());
+        dto.setReviewCreationDate(entity.getReviewCreationDate());
+        dto.setRating(entity.getRating());
+        if (entity.getUser() != null && entity.getUser().getUuid() != null) {
+            dto.setUserUuid(entity.getUser().getUuid().toString());
+        }
+        if (entity.getBook() != null && entity.getBook().getIsbn() != null) {
+            dto.setBookIsbn(entity.getBook().getIsbn());
+        }
+        return dto;
     }
 
     /**
