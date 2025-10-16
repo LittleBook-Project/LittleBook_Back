@@ -5,7 +5,6 @@ import com.littlebook.entity.UserEntity;
 import com.littlebook.entity.BookEntity;
 import com.littlebook.repository.ReviewRepository;
 import com.littlebook.repository.UserRepository;
-import com.littlebook.repository.BookRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -30,10 +29,11 @@ public class ReviewService {
     private UserRepository userRepository;
     
     @Autowired
-    private BookRepository bookRepository;
+    private BookService bookService;
 
     /**
      * Crée une nouvelle review
+     * Si le livre n'existe pas en base, il sera automatiquement récupéré depuis OpenLibrary et sauvegardé
      */
     public ReviewEntity createReview(UUID userUuid, String bookIsbn, String description, Integer rating) {
         if (rating == null || rating < 1 || rating > 5) {
@@ -46,10 +46,16 @@ public class ReviewService {
             throw new IllegalArgumentException("Utilisateur introuvable");
         }
 
-        // Vérifie si le livre existe
-        Optional<BookEntity> book = bookRepository.findById(bookIsbn);
+        // Vérifie que l'ISBN existe bien sur OpenLibrary
+        boolean isbnExists = bookService.isIsbnValidOnOpenLibrary(bookIsbn);
+        if (!isbnExists) {
+            throw new IllegalArgumentException("ISBN inexistant sur OpenLibrary. Impossible de créer une review pour un livre inconnu.");
+        }
+
+        // Récupère le livre (depuis la base ou OpenLibrary)
+        Optional<BookEntity> book = bookService.getBookByIsbn(bookIsbn);
         if (book.isEmpty()) {
-            throw new IllegalArgumentException("Livre introuvable");
+            throw new IllegalArgumentException("Livre introuvable. Vérifiez l'ISBN ou effectuez d'abord une recherche.");
         }
 
         // Vérifie si l'utilisateur n'a pas déjà reviewé ce livre
@@ -64,7 +70,7 @@ public class ReviewService {
         review.setRating(rating);
 
         ReviewEntity savedReview = reviewRepository.save(review);
-        logger.info("Nouvelle review créée pour le livre {} par l'utilisateur {}", bookIsbn, userUuid);
+        logger.info("✅ Nouvelle review créée pour le livre {} par l'utilisateur {}", bookIsbn, userUuid);
         
         return savedReview;
     }

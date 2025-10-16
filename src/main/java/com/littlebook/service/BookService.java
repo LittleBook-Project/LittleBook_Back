@@ -70,6 +70,19 @@ public class BookService {
         }
     }
 
+        /**
+     * Vérifie si un ISBN existe sur OpenLibrary
+     */
+    public boolean isIsbnValidOnOpenLibrary(String isbn) {
+        try {
+            var resp = openLibraryService.fetchBookByIsbn(isbn);
+            return resp != null && resp.getFirstBook() != null;
+        } catch (Exception e) {
+            logger.warn("Vérification ISBN OpenLibrary échouée : {}", e.getMessage());
+            return false;
+        }
+    }
+
     /** Convertit une liste OpenLibrary → liste BookEntity */
     private List<BookEntity> mapToEntities(List<OpenLibraryBook> olBooks) {
         List<BookEntity> result = new ArrayList<>();
