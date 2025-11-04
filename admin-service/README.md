@@ -24,7 +24,36 @@ Ce dépôt contient :
 L’objectif de ce dépôt est d’offrir une base solide et évolutive avant le passage vers une **architecture orientée services (AOS)**.
 
 ---
-## 🚀 Stack technique
+## �️ Admin service (microservice)
+
+Ce dépôt contient désormais une structure permettant d'extraire un microservice dédié **admin**. Les points clés :
+
+- Entrypoint : `com.littlebook.admin.AdminApplication` (scan limité au package `com.littlebook.admin`).
+- Port par défaut : `8081` (fichier `src/main/resources/application.yml`).
+- Endpoints d'exemple : `/admin/health`, `/admin/ping`.
+- Le code existant (controllers pour Book/Review/Subscription/User) reste présent pour archivage mais n'est plus scanné par l'application admin (pour éviter les conflits lors du démarrage).
+
+Pour démarrer uniquement le microservice admin en local :
+
+```bash
+# compiler
+mvn -pl . clean package -DskipTests
+
+# lancer
+mvn -pl . spring-boot:run -Dspring-boot.run.main-class=com.littlebook.admin.AdminApplication
+```
+
+Ou via Docker (build + run) :
+
+```bash
+docker build -t littlebook-admin:local .
+docker run -p 8081:8081 littlebook-admin:local
+```
+
+Ce squelette est volontairement minimal — il fournit une base propre pour développer les features admin (gestion des utilisateurs, des rôles, monitoring, audits). Voir la section « TODO » en bas pour les étapes recommandées.
+
+---
+## �🚀 Stack technique
 
 - [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html) – LTS stable
 - [Spring Boot 3.x](https://spring.io/projects/spring-boot) – framework backend
