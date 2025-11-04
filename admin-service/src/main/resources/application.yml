@@ -1,34 +1,30 @@
+server:
+  port: 8081
+
 spring:
   application:
-    name: littlebook-back
+    name: admin-service
 
   main:
-    banner-mode: console # garde l’affichage de la bannière Spring Boot
-    lazy-initialization: false # charge tout au démarrage (bon pour dev)
-
-  output:
-    ansi:
-      enabled: always # couleurs dans la console
+    banner-mode: console
+    lazy-initialization: false
 
   datasource:
-    url: jdbc:postgresql://db.epgxaozzqwdlbwtuefye.supabase.co:5432/postgres?sslmode=require
-    username: postgres
-    password: Need2eatandsleep@diner
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:admindb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
 
-server:
-  port: 8080 # port du serveur
-  error:
-    include-message: always # utile pour debug les erreurs
+  # Disable automatic execution of SQL scripts for local H2 dev to avoid running
+  # PostgreSQL-specific scripts (e.g. CREATE EXTENSION) when using H2.
+  sql:
+    init:
+      mode: never
 
 management:
   endpoints:
@@ -36,7 +32,8 @@ management:
       exposure:
         include: health,info
 
+# Firebase config (use environment variables)
 app:
-  firebase: # config Firebase
-    credentials-path: ${FIREBASE_CREDENTIALS}
-    project-id: ${FIREBASE_PROJECT_ID}
+  firebase:
+    credentials-path: ${FIREBASE_CREDENTIALS:}
+    project-id: ${FIREBASE_PROJECT_ID:}
