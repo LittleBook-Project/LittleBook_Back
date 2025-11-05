@@ -1,4 +1,4 @@
-package com.littlebook.admin.config;
+package com.littlebook.review.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
