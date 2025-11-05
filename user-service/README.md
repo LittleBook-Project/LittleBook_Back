@@ -1,149 +1,123 @@
-# LittleBook_Back
-# 📘 Backend – Spring Boot 3 + Java 17 + SQL + Firebase
+# user-service
 
-LittleBook est une application de type réseau social visant à permettre aux utilisateurs de partager du contenu, de suivre d'autres membres et d'interagir à travers des publications et commentaires.  
-Ce dépôt correspond à la partie **back-end**, développée avec **Spring Boot**, assurant la gestion des utilisateurs, des rôles et des futures entités (posts, relations, etc.). Ce back sera en communication avec une partie **front-end** réalisé en parallèle avec **React**
+Ce README explique comment lancer le `user-service` en local, quelles routes REST sont exposées, et où trouver la documentation Swagger/OpenAPI.
 
----
-## 👥 Équipe de développement
+Le service utilise une base H2 en mémoire pour le développement. À chaque démarrage la base est recréée à partir de `schema.sql` et pré-remplie avec un utilisateur de test défini dans `data.sql` (email: `test.user@example.com`).
 
-- **[AlyneLDC](https://github.com/alyneldc)** — Gestion de projet / Responsable backend / documentation
-- **[MathBruu](https://github.com/mathbruu)** — Responsable frontend / intégration / documentation
-- **[MouniaT](https://github.com/MOUNIAT-1002)** — Responsable backend / conception / intégration / documentation
-- **[ThomasKsk](https://github.com/ThomasKsk)** — Base de données / documentation
+Port par défaut
+- http://localhost:8082
 
----
-## 📂 Sommaire
+Prérequis
+- JDK 17
+- Maven 3.6+
+- (Optionnel) Docker si vous préférez Postgres en local
 
-Ce dépôt contient :
-- Le **code source du back-end en Java - Spring Boot**
-- La **configuration de la base de données PostgreSQL (Supabase)**
-- Les **scripts d’initialisation**
-- Le **Dockerfile** pour le déploiement de l’API (en attente)
+Lancer le service
 
-L’objectif de ce dépôt est d’offrir une base solide et évolutive avant le passage vers une **architecture orientée services (AOS)**.
+Depuis le dossier `user-service` :
 
----
-## �️ Admin service (microservice)
+```powershell
+mvn spring-boot:run
+```
 
-Ce dépôt contient désormais une structure permettant d'extraire un microservice dédié **admin**. Les points clés :
+Après démarrage, l'API écoute sur le port 8082. La DB H2 en mémoire est initialisée automatiquement par `schema.sql` et `data.sql`.
 
-- Entrypoint : `com.littlebook.admin.AdminApplication` (scan limité au package `com.littlebook.admin`).
-- Port par défaut : `8081` (fichier `src/main/resources/application.yml`).
-- Endpoints d'exemple : `/admin/health`, `/admin/ping`.
-- Le code existant (controllers pour Book/Review/Subscription/User) reste présent pour archivage mais n'est plus scanné par l'application admin (pour éviter les conflits lors du démarrage).
+Endpoints principaux
 
-Pour démarrer uniquement le microservice admin en local :
+Base: `/user`
+
+- GET `/user/health` — simple health check (retourne `user-service OK`)
+- GET `/user/ping` — ping → `pong`
+- POST `/user/oauth` — Provision / synchronise un profil venant d'un provider OAuth (appelé depuis l'`auth-service`).
+  - Payload (JSON) :
+    ```json
+    {
+      "provider": "GOOGLE",
+      "providerId": "google-1234567890",
+      "email": "test.user@example.com",
+      "name": "Test User",
+      "picture": "https://example.com/avatar.png",
+      "emailVerified": true
+    }
+    ```
+  - Retour : `UserResponse` (objet utilisateur créé / mis à jour)
+
+- GET `/user/{id}` — récupère le profil par UUID
+- GET `/user/by-email?email=...` — récupère le profil par email
+- PATCH `/user/{id}` — met à jour partiellement le profil
+  - Payload (JSON) :
+    ```json
+    {
+      "name": "Nouvel Nom",
+      "picture": "https://example.com/new.png",
+      "roles": "ROLE_USER,ROLE_ADMIN"
+    }
+    ```
+  - Retour : `UserResponse` mis à jour
+
+- DELETE `/user/{id}` — soft-delete (set `is_active=false`), retourne 204 No Content
+
+Exemples curl (PowerShell)
+
+```powershell
+# 1) Récupérer l'utilisateur de test
+curl "http://localhost:8082/user/by-email?email=test.user@example.com"
+
+# 2) Créer / synchroniser un utilisateur OAuth
+curl -X POST "http://localhost:8082/user/oauth" -H "Content-Type: application/json" -d '{"provider":"GOOGLE","providerId":"google-abc","email":"new@example.com","name":"New","picture":"https://...","emailVerified":true}'
+
+# 3) Mettre à jour un utilisateur (patch)
+curl -X PATCH "http://localhost:8082/user/11111111-1111-1111-1111-111111111111" -H "Content-Type: application/json" -d '{"name":"Test Updated"}'
+```
+
+Swagger / OpenAPI
+
+- Swagger UI (interface web) :
+  - http://localhost:8082/swagger-ui.html
+  - ou http://localhost:8082/swagger-ui/index.html
+- OpenAPI JSON : http://localhost:8082/v3/api-docs
+
+Si tu ne vois pas Swagger, vérifie `SecurityConfig` : les chemins `/v3/api-docs/**` et `/swagger-ui/**` doivent être autorisés en développement.
+
+Base de données (dev)
+- Fichier de schéma : `src/main/resources/schema.sql`
+- Fichier d'initialisation de données : `src/main/resources/data.sql` (contient l'utilisateur de test `test.user@example.com`)
+- Configuration d'initialisation : `spring.sql.init.mode=always` dans `application.yml` (le schéma et les données sont ré-appliqués à chaque démarrage — idéal pour les tests locaux)
+
+Passer en Postgres (optionnel)
+- Le driver PostgreSQL est déjà présent dans le `pom.xml`.
+# user-service (court)
+
+Lancement
+
+```powershell
+cd user-service
+mvn spring-boot:run
+```
+
+Base: http://localhost:8082
+
+Endpoints principaux (base `/user`)
+- GET `/user/health` — health check
+- GET `/user/ping` — ping
+- POST `/user/oauth` — provisione / synchronise un profil OAuth (payload JSON: provider, providerId, email, name, picture, emailVerified)
+- GET `/user/{id}` — récupère par UUID
+- GET `/user/by-email?email=...` — récupère par email
+- PATCH `/user/{id}` — met à jour partiellement (name, picture, roles)
+- DELETE `/user/{id}` — soft-delete (is_active=false)
+
+Swagger / OpenAPI
+- UI : http://localhost:8082/swagger-ui.html (ou /swagger-ui/index.html)
+- Spec : http://localhost:8082/v3/api-docs
+
+Base de données (dev)
+- H2 en mémoire ; initialisée à chaque démarrage par `src/main/resources/schema.sql` et `src/main/resources/data.sql`.
+- Utilisateur de test : `test.user@example.com` (id `11111111-1111-1111-1111-111111111111`)
+
+Fin.
 
 ```bash
- # admin-service — microservice Admin
+mvn spring-boot:run
+```
+---
 
- Ce dossier contient le microservice "admin" extrait du backend LittleBook.
- Il s'agit d'un petit service Spring Boot destiné à exposer des opérations d'administration (monitoring, gestion des utilisateurs/rôles, audits).
-
- Principales caractéristiques
- - Entrypoint : `com.littlebook.admin.AdminApplication`
- - Port par défaut : 8081
- - Endpoints d'exemple : `/admin/health`, `/admin/ping`
-
- Important : ce README couvre uniquement le microservice `admin-service`. Les sources plus larges du backend (monolithe) ont été archivées ou déplacées — voir `archived/` si présent.
-
- ## Structure du projet
-
- - `src/main/java/com/littlebook/admin` : code spécifique au microservice (controller, service, repository, config, dto)
- - `src/main/resources/application.yml` : configuration locale (H2 par défaut)
- - `Dockerfile` : build/run en image
- - `scripts/` : scripts d'aide (archive, cleanup)
-
- ## Prérequis
-
- - Java 17+ (ou Java 21 présent sur la machine de build)
- - Maven 3.8+
- - Docker (optionnel)
-
- ## Variables d'environnement utiles
-
- - `FIREBASE_PROJECT_ID` — identifiant Firebase (si utilisé)
- - `FIREBASE_CREDENTIALS` — chemin absolu vers la clé de service Firebase (JSON)
- - Pour override de la DB en production (exemple) :
-   - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
-
- Ne placez jamais de mots de passe en clair dans le repo. Utilisez des variables d'environnement ou un coffre (Vault / GitHub Secrets).
-
- ## Développement — lancer localement
-
- 1) Compiler le projet (rapide, tests sautés) :
-
- ```bash
- cd /Users/justinekosinski/Desktop/ledoux/LittleBook_Back/admin-service
- mvn -DskipTests clean package
- ```
-
- 2) Lancer avec Maven (utilise l'entrypoint admin) :
-
- ```bash
- mvn -DskipTests -Dspring-boot.run.main-class=com.littlebook.admin.AdminApplication spring-boot:run
- ```
-
- ou lancer le jar produit :
-
- ```bash
- java -jar target/littlebook-back-0.0.1-SNAPSHOT.jar
- ```
-
- Test rapide des endpoints :
-
- ```bash
- curl -sS http://localhost:8081/admin/health
- curl -sS http://localhost:8081/admin/ping
- ```
-
- Si vous utilisez un port autre que 8081, passez l'argument `--server.port=XXXX` à la JVM ou à `spring-boot:run`.
-
- ## Docker
-
- Build et run :
-
- ```bash
- # depuis le dossier admin-service
- docker build -t littlebook-admin:local .
- docker run -p 8081:8081 littlebook-admin:local
- ```
-
- ## Base de données et scripts SQL
-
- Par défaut, `application.yml` configure une base H2 en mémoire pour le développement local.
- Le projet contient des scripts SQL orientés PostgreSQL (ex. `schema.sql`) — ces scripts ne doivent pas être exécutés automatiquement contre H2. Le démarrage local est configuré pour ignorer l'init SQL.
-
- En production, activez un profil (ex. `prod`) avec une datasource PostgreSQL et utilisez Flyway ou Liquibase pour l'initialisation/les migrations.
-
- ## Tests
-
- Exécuter les tests :
-
- ```bash
- mvn test
- ```
-
- Ajoutez des tests unitaires et d'intégration dans `src/test` pour couvrir le contrôleur admin et la logique métier.
-
- ## Sécurité
-
- Actuellement la configuration de sécurité est minimale (dev). Avant production, mettez en place :
-
- - authentification (JWT / Firebase / OAuth2)
- - configuration des rôles et permissions pour les endpoints d'administration
-
- ## Bonnes pratiques & next steps
-
- - Ne laissez aucune credential sensible commitée. Migrer les secrets vers un vault.
- - Déplacer la gestion des schémas DB vers Flyway/Liquibase et activer par profil.
- - Ajouter une pipeline CI qui build, teste et publie l'image Docker.
- - Ajouter des metrics/opentelemetry et des endpoints d'audit pour l'administration.
-
- ## Contact / Contributeurs
-
- Voir la racine du monorepo pour la liste complète des contributeurs.
-
- ---
- Petit résumé : ce README vous permet de démarrer rapidement le microservice admin en local, de comprendre la configuration par défaut et les étapes à suivre pour rendre le service prêt pour la production.
