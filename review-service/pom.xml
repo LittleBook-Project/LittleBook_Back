@@ -128,7 +128,8 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
-          <mainClass>com.littlebook.LittlebookApplication</mainClass>
+          <!-- Point vers la nouvelle application dédiée review -->
+          <mainClass>com.littlebook.review.ReviewApplication</mainClass>
         </configuration>
       </plugin>
     </plugins>
