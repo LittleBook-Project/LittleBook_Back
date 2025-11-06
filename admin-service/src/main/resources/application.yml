@@ -19,12 +19,23 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    # Ensure Hibernate creates/updates schema before Spring runs data.sql
+    defer-datasource-initialization: true
 
-  # Disable automatic execution of SQL scripts for local H2 dev to avoid running
-  # PostgreSQL-specific scripts (e.g. CREATE EXTENSION) when using H2.
+
+  # Enable H2 console for local dev
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  # SQL initialization mode for embedded DB (data.sql will be executed)
   sql:
     init:
-      mode: never
+      mode: embedded
+  # Prevent execution of legacy/postgres schema.sql left in resources by clearing schema locations.
+  # Keep data.sql as the source of truth for H2 embedded initialization.
+  schema-locations: []
+  data-locations: classpath:data.sql
 
 management:
   endpoints:
@@ -37,3 +48,8 @@ app:
   firebase:
     credentials-path: ${FIREBASE_CREDENTIALS:}
     project-id: ${FIREBASE_PROJECT_ID:}
+
+# Swagger/OpenAPI UI path
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
