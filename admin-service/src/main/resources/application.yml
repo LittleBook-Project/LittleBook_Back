@@ -49,6 +49,10 @@ app:
     credentials-path: ${FIREBASE_CREDENTIALS:}
     project-id: ${FIREBASE_PROJECT_ID:}
 
+  # URL du service utilisateur (utilisé par admin pour enrichir les stats)
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8082}
+
 # Swagger/OpenAPI UI path
 springdoc:
   swagger-ui:

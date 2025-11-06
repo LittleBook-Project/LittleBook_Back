@@ -98,6 +98,22 @@ Pour démarrer uniquement le microservice admin en local :
  curl -sS http://localhost:8081/admin/ping
  ```
 
+Endpoints d'administration / statistiques (exemples) :
+
+```bash
+# Liste des stats utilisateur (stockées localement dans admin DB)
+curl -sS http://localhost:8081/api/stats/users
+
+# Liste enrichie : jointure dynamique avec user-service (email, name, roles...)
+curl -sS http://localhost:8081/api/stats/users/enriched
+
+# Evénements de login
+curl -sS http://localhost:8081/api/stats/login-events
+
+# Résumé global
+curl -sS http://localhost:8081/api/stats/summary
+```
+
  Si vous utilisez un port autre que 8081, passez l'argument `--server.port=XXXX` à la JVM ou à `spring-boot:run`.
 
  ## Docker
@@ -140,6 +156,16 @@ Pour démarrer uniquement le microservice admin en local :
  - Déplacer la gestion des schémas DB vers Flyway/Liquibase et activer par profil.
  - Ajouter une pipeline CI qui build, teste et publie l'image Docker.
  - Ajouter des metrics/opentelemetry et des endpoints d'audit pour l'administration.
+
+## Swagger / OpenAPI
+
+L'UI Swagger est exposée via springdoc. Après démarrage du service, ouvrez :
+
+```
+http://localhost:8081/swagger-ui.html
+```
+
+Vous y verrez la documentation interactive des endpoints exposés (ex: `/api/stats/*`).
 
  ## Contact / Contributeurs
 
