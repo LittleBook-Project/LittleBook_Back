@@ -1,119 +1,123 @@
-# LittleBook_Back
-# 📘 Backend – Spring Boot 3 + Java 17 + SQL + Firebase
+# user-service
 
-LittleBook est une application de type réseau social visant à permettre aux utilisateurs de partager du contenu, de suivre d'autres membres et d'interagir à travers des publications et commentaires.  
-Ce dépôt correspond à la partie **back-end**, développée avec **Spring Boot**, assurant la gestion des utilisateurs, des rôles et des futures entités (posts, relations, etc.). Ce back sera en communication avec une partie **front-end** réalisé en parallèle avec **React**
+Ce README explique comment lancer le `user-service` en local, quelles routes REST sont exposées, et où trouver la documentation Swagger/OpenAPI.
 
----
-## 👥 Équipe de développement
+Le service utilise une base H2 en mémoire pour le développement. À chaque démarrage la base est recréée à partir de `schema.sql` et pré-remplie avec un utilisateur de test défini dans `data.sql` (email: `test.user@example.com`).
 
-- **[AlyneLDC](https://github.com/alyneldc)** — Gestion de projet / Responsable backend / documentation
-- **[MathBruu](https://github.com/mathbruu)** — Responsable frontend / intégration / documentation
-- **[MouniaT](https://github.com/MOUNIAT-1002)** — Responsable backend / conception / intégration / documentation
-- **[ThomasKsk](https://github.com/ThomasKsk)** — Base de données / documentation
+Port par défaut
+- http://localhost:8082
 
----
-## 📂 Sommaire
+Prérequis
+- JDK 17
+- Maven 3.6+
+- (Optionnel) Docker si vous préférez Postgres en local
 
-Ce dépôt contient :
-- Le **code source du back-end en Java - Spring Boot**
-- La **configuration de la base de données PostgreSQL (Supabase)**
-- Les **scripts d’initialisation**
-- Le **Dockerfile** pour le déploiement de l’API (en attente)
+Lancer le service
 
-L’objectif de ce dépôt est d’offrir une base solide et évolutive avant le passage vers une **architecture orientée services (AOS)**.
+Depuis le dossier `user-service` :
 
----
-## 🚀 Stack technique
-
-- [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html) – LTS stable
-- [Spring Boot 3.x](https://spring.io/projects/spring-boot) – framework backend
-- [Lombok](https://projectlombok.org/) – simplification du code (getters, setters, constructeurs)
-- [JUnit 5](https://junit.org/junit5/) – tests unitaires et d’intégration
-- [Supabase](https://supabase.com) – base de données relationnelle (PostgreSQL)
-- [Firebase](https://firebase.google.com/) – services cloud (authentification, notifications, storage…)
-- [Open library](https://openlibrary.org/developers/api) - Récupération de l'ensemble des livres, genre, ...
-
----
-## 📦 Installation
-
-### 1. Cloner le projet
-```bash
-git clone https://github.com/MOUNIAT-1002/LittleBook_Back.git
-cd LittleBook_Back
+```powershell
+mvn spring-boot:run
 ```
 
-### 2. Activer les Git hooks (protection secrets)
+Après démarrage, l'API écoute sur le port 8082. La DB H2 en mémoire est initialisée automatiquement par `schema.sql` et `data.sql`.
 
-**Une seule fois après le clone :**
+Endpoints principaux
 
-```bash
-# Sur Linux/Mac
-./setup-hooks.sh
+Base: `/user`
 
-# Sur Windows (PowerShell)
-.\setup-hooks.ps1
+- GET `/user/health` — simple health check (retourne `user-service OK`)
+- GET `/user/ping` — ping → `pong`
+- POST `/user/oauth` — Provision / synchronise un profil venant d'un provider OAuth (appelé depuis l'`auth-service`).
+  - Payload (JSON) :
+    ```json
+    {
+      "provider": "GOOGLE",
+      "providerId": "google-1234567890",
+      "email": "test.user@example.com",
+      "name": "Test User",
+      "picture": "https://example.com/avatar.png",
+      "emailVerified": true
+    }
+    ```
+  - Retour : `UserResponse` (objet utilisateur créé / mis à jour)
+
+- GET `/user/{id}` — récupère le profil par UUID
+- GET `/user/by-email?email=...` — récupère le profil par email
+- PATCH `/user/{id}` — met à jour partiellement le profil
+  - Payload (JSON) :
+    ```json
+    {
+      "name": "Nouvel Nom",
+      "picture": "https://example.com/new.png",
+      "roles": "ROLE_USER,ROLE_ADMIN"
+    }
+    ```
+  - Retour : `UserResponse` mis à jour
+
+- DELETE `/user/{id}` — soft-delete (set `is_active=false`), retourne 204 No Content
+
+Exemples curl (PowerShell)
+
+```powershell
+# 1) Récupérer l'utilisateur de test
+curl "http://localhost:8082/user/by-email?email=test.user@example.com"
+
+# 2) Créer / synchroniser un utilisateur OAuth
+curl -X POST "http://localhost:8082/user/oauth" -H "Content-Type: application/json" -d '{"provider":"GOOGLE","providerId":"google-abc","email":"new@example.com","name":"New","picture":"https://...","emailVerified":true}'
+
+# 3) Mettre à jour un utilisateur (patch)
+curl -X PATCH "http://localhost:8082/user/11111111-1111-1111-1111-111111111111" -H "Content-Type: application/json" -d '{"name":"Test Updated"}'
 ```
----
-### 3. Setup développeur (Authentification Google via Firebase)
 
-1. Demander la **clé de service** (fichier JSON) dans le coffre-fort d’équipe.
-2. Placer le fichier en local, hors dépôt, p.ex.:
-   - macOS/Linux: `~/littlebook/secrets/firebase-adminsdk.json`
-   - Windows: `C:\Users\<you>\littlebook\secrets\firebase-adminsdk.json`
-3. Exporter les variables d’environnement:
-   - macOS/Linux:
-     ```bash
-     export FIREBASE_PROJECT_ID=littlebook-b2d2d
-     export FIREBASE_CREDENTIALS=/ABSOLU/vers/secrets/firebase-sa.json
-     ```
-   - Windows (PowerShell):
-     ```powershell
-     $env:FIREBASE_PROJECT_ID = "littlebook-b2d2d"
-     $env:FIREBASE_CREDENTIALS = "C:\<chemin>\secrets\firebase-sa.json"
-     ```
+Swagger / OpenAPI
 
-## ⚙️ Compilation et execution 
-### 1. Compilation
-```bash
-mvn clean install
+- Swagger UI (interface web) :
+  - http://localhost:8082/swagger-ui.html
+  - ou http://localhost:8082/swagger-ui/index.html
+- OpenAPI JSON : http://localhost:8082/v3/api-docs
+
+Si tu ne vois pas Swagger, vérifie `SecurityConfig` : les chemins `/v3/api-docs/**` et `/swagger-ui/**` doivent être autorisés en développement.
+
+Base de données (dev)
+- Fichier de schéma : `src/main/resources/schema.sql`
+- Fichier d'initialisation de données : `src/main/resources/data.sql` (contient l'utilisateur de test `test.user@example.com`)
+- Configuration d'initialisation : `spring.sql.init.mode=always` dans `application.yml` (le schéma et les données sont ré-appliqués à chaque démarrage — idéal pour les tests locaux)
+
+Passer en Postgres (optionnel)
+- Le driver PostgreSQL est déjà présent dans le `pom.xml`.
+# user-service (court)
+
+Lancement
+
+```powershell
+cd user-service
+mvn spring-boot:run
 ```
-### 2. Execution
+
+Base: http://localhost:8082
+
+Endpoints principaux (base `/user`)
+- GET `/user/health` — health check
+- GET `/user/ping` — ping
+- POST `/user/oauth` — provisione / synchronise un profil OAuth (payload JSON: provider, providerId, email, name, picture, emailVerified)
+- GET `/user/{id}` — récupère par UUID
+- GET `/user/by-email?email=...` — récupère par email
+- PATCH `/user/{id}` — met à jour partiellement (name, picture, roles)
+- DELETE `/user/{id}` — soft-delete (is_active=false)
+
+Swagger / OpenAPI
+- UI : http://localhost:8082/swagger-ui.html (ou /swagger-ui/index.html)
+- Spec : http://localhost:8082/v3/api-docs
+
+Base de données (dev)
+- H2 en mémoire ; initialisée à chaque démarrage par `src/main/resources/schema.sql` et `src/main/resources/data.sql`.
+- Utilisateur de test : `test.user@example.com` (id `11111111-1111-1111-1111-111111111111`)
+
+Fin.
+
 ```bash
 mvn spring-boot:run
 ```
 ---
-## 🧩 Implémentation actuelle
 
-L’architecture actuelle suit une approche **monolithique** : toutes les fonctionnalités (utilisateurs, relations, posts, etc.) sont regroupées au sein d’une même API Spring Boot.
-
-Cette approche permet un développement rapide et une meilleure cohérence initiale.  
-À terme, l’objectif est de **découper l’application en microservices**, suivant une **architecture orientée services (AOS)** :
-- Un service **User**
-- Un service **Review**
-- Un service **Suscriber / Suscribed**
-- Un service **Notification**
-
----
-## 🔮 Perspectives d’avenir
-
-- Mise en place d’une **API Gateway** après le découpage complet en microservices  
-- Création d’un **module de représentation graphique** basé sur les données utilisateurs  
-- Ajout d’un **système d’envoi d’emails de notification** pour informer les utilisateurs de leurs réalisations  
-- **Déploiement complet avec Docker** et orchestration des services  
-- **Ouverture du projet en open-source** pour favoriser la contribution communautaire  
-- Mise en place d’une **authentification avancée** (JWT / OAuth2) 
-
----
-## 🧩 Modèle de donnée
-![Modèle de donnée de l'application](images/model_donnees/md_v1.png)
-
----
-## 🌐 Déploiement
-
-L’API est actuellement en cours de réalisation et n'est pas encore accessible au public.
-
-Lien du dépot github : 
-👉 https://github.com/LittleBook-Project/LittleBook_Back/
-Lien de production :
-👉 **En attente de la fin complète du projet**

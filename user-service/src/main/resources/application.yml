@@ -1,34 +1,32 @@
+server:
+  port: 8082
+
 spring:
   application:
-    name: littlebook-back
+    name: user-service
 
   main:
-    banner-mode: console # garde l’affichage de la bannière Spring Boot
-    lazy-initialization: false # charge tout au démarrage (bon pour dev)
-
-  output:
-    ansi:
-      enabled: always # couleurs dans la console
+    banner-mode: console
+    lazy-initialization: false
 
   datasource:
-    url: jdbc:postgresql://db.epgxaozzqwdlbwtuefye.supabase.co:5432/postgres?sslmode=require
-    username: postgres
-    password: Need2eatandsleep@diner
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:userdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
 
   jpa:
     hibernate:
       ddl-auto: none
     show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
 
-server:
-  port: 8080 # port du serveur
-  error:
-    include-message: always # utile pour debug les erreurs
+  # Force SQL initialization from schema.sql / data.sql for the in-memory test DB
+  sql:
+    init:
+      mode: always
+
+  # Defer datasource initialization until after Hibernate (not needed when ddl-auto=none)
+  # spring.jpa.defer-datasource-initialization: true
 
 management:
   endpoints:
@@ -36,7 +34,8 @@ management:
       exposure:
         include: health,info
 
+# Firebase config (use environment variables)
 app:
-  firebase: # config Firebase
-    credentials-path: ${FIREBASE_CREDENTIALS}
-    project-id: ${FIREBASE_PROJECT_ID}
+  firebase:
+    credentials-path: ${FIREBASE_CREDENTIALS:}
+    project-id: ${FIREBASE_PROJECT_ID:}
