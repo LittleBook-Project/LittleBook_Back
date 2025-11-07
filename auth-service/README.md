@@ -1,119 +1,220 @@
-# LittleBook_Back
-# 📘 Backend – Spring Boot 3 + Java 17 + SQL + Firebase
+# Auth Service — LittleBook
 
-LittleBook est une application de type réseau social visant à permettre aux utilisateurs de partager du contenu, de suivre d'autres membres et d'interagir à travers des publications et commentaires.  
-Ce dépôt correspond à la partie **back-end**, développée avec **Spring Boot**, assurant la gestion des utilisateurs, des rôles et des futures entités (posts, relations, etc.). Ce back sera en communication avec une partie **front-end** réalisé en parallèle avec **React**
+Service d'authentification indépendant (SOA) pour LittleBook.
 
----
-## 👥 Équipe de développement
-
-- **[AlyneLDC](https://github.com/alyneldc)** — Gestion de projet / Responsable backend / documentation
-- **[MathBruu](https://github.com/mathbruu)** — Responsable frontend / intégration / documentation
-- **[MouniaT](https://github.com/MOUNIAT-1002)** — Responsable backend / conception / intégration / documentation
-- **[ThomasKsk](https://github.com/ThomasKsk)** — Base de données / documentation
+Ce README décrit le service, son architecture, son déploiement local/production, les endpoints exposés, la sécurité, les tests et les recommandations opérationnelles.
 
 ---
-## 📂 Sommaire
 
-Ce dépôt contient :
-- Le **code source du back-end en Java - Spring Boot**
-- La **configuration de la base de données PostgreSQL (Supabase)**
-- Les **scripts d’initialisation**
-- Le **Dockerfile** pour le déploiement de l’API (en attente)
+## 1. Présentation
 
-L’objectif de ce dépôt est d’offrir une base solide et évolutive avant le passage vers une **architecture orientée services (AOS)**.
+- Rôle : service autonome de validation d'ID tokens Firebase. Il fournit des endpoints REST permettant aux frontends de vérifier l'identité d'un utilisateur et d'obtenir des informations de profil.
+- Contexte technologique : Java 17, Spring Boot 3.3.x, Spring Security 6, Firebase Admin SDK, springdoc OpenAPI.
+- Caractéristiques : stateless (pas de base de données), s'intègre avec Firebase pour valider les tokens émis par Google Sign-In.
 
----
-## 🚀 Stack technique
+Pourquoi stateless ?
+- Le service ne conserve aucun état utilisateur côté serveur : il valide des tokens fournis par le client et retourne des informations extraites du token. Cela facilite le scaling horizontal et rend le service simple à déployer.
 
-- [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html) – LTS stable
-- [Spring Boot 3.x](https://spring.io/projects/spring-boot) – framework backend
-- [Lombok](https://projectlombok.org/) – simplification du code (getters, setters, constructeurs)
-- [JUnit 5](https://junit.org/junit5/) – tests unitaires et d’intégration
-- [Supabase](https://supabase.com) – base de données relationnelle (PostgreSQL)
-- [Firebase](https://firebase.google.com/) – services cloud (authentification, notifications, storage…)
-- [Open library](https://openlibrary.org/developers/api) - Récupération de l'ensemble des livres, genre, ...
+## 2. Fonctionnalités
 
----
-## 📦 Installation
+- Vérification et décodage d'ID token Firebase via `FirebaseAuth.verifyIdToken()`.
+- Endpoints REST :
+  - `GET /api/public/ping` — endpoint public pour vérifier la disponibilité.
+  - `GET /api/auth/me` — endpoint protégé qui retourne le profil extrait du token (uid, email, name, picture, roles).
+- Sécurité : Spring Security configuré en mode stateless ; authentification via un filtre custom `FirebaseTokenFilter` qui extrait et vérifie le Bearer token.
+- CORS : contrôlé par propriétés (`security.cors.*`) et exposé via un `CorsConfigurationSource` intégré à la chaîne de sécurité.
+- Documentation OpenAPI/SWAGGER : fournie par `springdoc`; UI activée uniquement en profil `dev`.
 
-### 1. Cloner le projet
-```bash
-git clone https://github.com/MOUNIAT-1002/LittleBook_Back.git
-cd LittleBook_Back
-```
+## 3. Architecture (schéma texte)
 
-### 2. Activer les Git hooks (protection secrets)
+Pipeline d'une requête protégée (/api/auth/me) :
 
-**Une seule fois après le clone :**
+Client -> (préflight CORS possible) -> Tomcat -> Spring Security FilterChain
+  -> CorsConfigurationSource (vérifie origin/method/headers)
+  -> FirebaseTokenFilter (si route non publique/OPTIONS)
+       - lit header `Authorization: Bearer <ID_TOKEN>`
+       - appelle `FirebaseAuth.verifyIdToken(token)`
+       - sur succès : remplit SecurityContext avec Authentication (uid + détails)
+       - sur échec : ne met pas d'authentification (entrée renvoie 401 par EntryPoint)
+  -> Controller `AuthController` (lit Authentication et retourne profil)
 
-```bash
-# Sur Linux/Mac
-./setup-hooks.sh
+Composants principaux :
+- `FirebaseConfig` : initialisation `FirebaseApp` (fichier credentials ou ADC)
+- `FirebaseTokenFilter` : filtre de vérification des tokens
+- `SecurityConfig` : configuration Spring Security (STATELESS, exception handling, autorisations)
+- `CorsConfig` + `CorsProperties` : configuration CORS centralisée
+- `AuthController` : endpoints /api/public/ping et /api/auth/me
 
-# Sur Windows (PowerShell)
-.\setup-hooks.ps1
-```
----
-### 3. Setup développeur (Authentification Google via Firebase)
+## 4. Installation & Exécution
 
-1. Demander la **clé de service** (fichier JSON) dans le coffre-fort d’équipe.
-2. Placer le fichier en local, hors dépôt, p.ex.:
-   - macOS/Linux: `~/littlebook/secrets/firebase-adminsdk.json`
-   - Windows: `C:\Users\<you>\littlebook\secrets\firebase-adminsdk.json`
-3. Exporter les variables d’environnement:
-   - macOS/Linux:
-     ```bash
-     export FIREBASE_PROJECT_ID=littlebook-b2d2d
-     export FIREBASE_CREDENTIALS=/ABSOLU/vers/secrets/firebase-sa.json
-     ```
-   - Windows (PowerShell):
-     ```powershell
-     $env:FIREBASE_PROJECT_ID = "littlebook-b2d2d"
-     $env:FIREBASE_CREDENTIALS = "C:\<chemin>\secrets\firebase-sa.json"
-     ```
+Prerequis :
+- Java 17+ installé
+- Maven 3.8+
 
-## ⚙️ Compilation et execution 
-### 1. Compilation
-```bash
-mvn clean install
-```
-### 2. Execution
-```bash
+Variables d'environnement (exigées / recommandées) :
+- `FIREBASE_CREDENTIALS` : chemin absolu vers le JSON du service account (optionnel si ADC utilisé)
+- `FIREBASE_PROJECT_ID` : (optionnel) project id Firebase
+- `SPRING_PROFILES_ACTIVE` : `dev` pour activer Swagger UI (optionnel)
+
+Exemples (PowerShell) :
+
+```powershell
+# définir les variables (Windows PowerShell)
+$env:FIREBASE_CREDENTIALS = 'C:\path\to\firebase-sa.json'
+$env:FIREBASE_PROJECT_ID = 'my-firebase-project'
+$env:SPRING_PROFILES_ACTIVE = 'dev'   # active swagger-ui
+
+# lancer en développement
+cd auth-service
 mvn spring-boot:run
 ```
+
+Builder puis lancer le jar :
+
+```powershell
+mvn -f auth-service/pom.xml -DskipTests package
+java -jar auth-service/target/auth-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
+```
+
+Fichier `application.yml` (extrait) :
+
+```yaml
+server:
+  port: 8081
+
+security:
+  cors:
+    allowed-origins:
+      - "http://127.0.0.1:5500"
+      - "http://localhost:5500"
+      - "http://localhost:5173"
+    allowed-methods: [GET,POST,PUT,PATCH,DELETE,OPTIONS]
+    allowed-headers: [Authorization,Content-Type,X-Requested-With]
+    exposed-headers: [Authorization,Content-Type,Location]
+
+app:
+  firebase:
+    credentials-path: ${FIREBASE_CREDENTIALS:}
+    project-id: ${FIREBASE_PROJECT_ID:}
+
+springdoc:
+  swagger-ui:
+    enabled: false   # activé via application-dev.yml
+```
+
+⚠️ À compléter : gérer les secrets via Vault / KMS en prod.
+
+## 5. Endpoints
+
+1) GET /api/public/ping
+- Description : point de test public
+- Exemple :
+  ```bash
+  curl -i http://localhost:8081/api/public/ping
+  ```
+- Réponse 200 :
+  ```json
+  { "status": "ok" }
+  ```
+
+2) GET /api/auth/me
+- Description : retourne le profil de l'utilisateur authentifié via le Firebase ID token
+- Requête : header `Authorization: Bearer <ID_TOKEN>`
+- Exemple (sans token) :
+  ```bash
+  curl -i http://localhost:8081/api/auth/me
+  # => 401 Unauthorized
+  ```
+- Exemple (avec token) :
+  ```bash
+  curl -i -H "Authorization: Bearer <ID_TOKEN>" http://localhost:8081/api/auth/me
+  ```
+- Réponse 200 :
+  ```json
+  {
+    "uid": "uid123",
+    "email": "john@doe.com",
+    "name": "John Doe",
+    "picture": "https://...",
+    "roles": ["ROLE_USER"]
+  }
+  ```
+- Codes d'erreur :
+  - 401 Unauthorized : token manquant ou invalide
+  - 403 Forbidden : accès refusé (rare ici, route protégée sans permission)
+
+## 6. Sécurité
+
+- Bearer token : le filtre `FirebaseTokenFilter` lit `Authorization` et cherche `Bearer `.
+- Vérification : `firebaseAuth.verifyIdToken(token)` — en cas d'exception, la requête n'est pas authentifiée.
+- `SessionCreationPolicy.STATELESS` : justification
+  - Le serveur n'a pas à conserver d'état : tout s'appuie sur le token signé par Firebase. Cela permet un scaling horizontal simple et évite la charge mémoire/stockage côté serveur.
+- CORS :
+  - Les origines autorisées sont définies dans `application.yml` (`security.cors.allowed-origins`)
+  - Le bean `CorsConfigurationSource` est utilisé par Spring Security (garantit cohérence entre CORS et sécurité)
+
+## 7. Déploiement
+
+Build JAR :
+```bash
+mvn -f auth-service/pom.xml -DskipTests package
+```
+
+Variables à fournir en production :
+- `FIREBASE_CREDENTIALS` (ou utilisez ADC via `GOOGLE_APPLICATION_CREDENTIALS`),
+- `FIREBASE_PROJECT_ID`,
+- `SPRING_PROFILES_ACTIVE` (ne PAS activer `dev` en prod). 
+
+Recommandations prod :
+- Ne pas exposer Swagger UI en production.
+- Utiliser un secret manager (Vault / AWS KMS / GCP Secret Manager) pour stocker `firebase-sa.json` ou utiliser ADC.
+- Ajouter rate-limiting (ex: Bucket4j) si le service est exposé publiquement.
+- Configurer logs structurés et monitoring (Prometheus / Grafana) via Actuator metrics.
+
+## 8. Tests
+
+Exécuter la suite :
+```bash
+mvn -f auth-service/pom.xml test
+```
+
+Tests inclus :
+- `CorsPreflightTest` : vérifie les préflights OPTIONS et les en-têtes CORS.
+- `SecurityIntegrationTest` : tests d'intégration mockant `FirebaseAuth` pour couvrir :
+  - route publique accessible,
+  - route protégée renvoyant 401 sans token,
+  - route protégée renvoyant 200 avec token mocké,
+  - comportement en cas de token invalide.
+
+Comment mocker Firebase Admin pour les tests :
+- Les tests utilisent `@MockBean` pour `FirebaseAuth` et `FirebaseApp` (voir `SecurityIntegrationTest`). Ainsi la validation de token est simulée et les tests sont déterministes.
+
+
+
+## 9. FAQ & Conseils
+
+- Pourquoi pas de base de données ?
+  - Le service ne stocke aucun état : il se contente de vérifier des tokens signés par Firebase et retourne les informations. Ajouter une DB serait nécessaire uniquement si on veut garder des sessions, logs personnalisés ou lier des profils à des données internes.
+
+- Ajouter d'autres providers OAuth ?
+  - Abstraire la vérification dans un service `TokenVerificationService` et fournir des implémentations pour Firebase, Auth0, etc. Le filtre pourrait déléguer à ce service.
+
+- Étendre les endpoints
+  - Ajouter `/api/auth/refresh` si l'on souhaite gérer des refresh tokens côté serveur (nécessite stockage et revocation logiciel).
+
+## 10. Licence & auteurs
+
+Projet LittleBook — licence : voir `LICENSE` à la racine du dépôt.
+
 ---
-## 🧩 Implémentation actuelle
 
-L’architecture actuelle suit une approche **monolithique** : toutes les fonctionnalités (utilisateurs, relations, posts, etc.) sont regroupées au sein d’une même API Spring Boot.
+⚠️ À compléter / recommandations futures
+- Ajouter `application-prod.yml` et verrouiller Actuator/Swagger.
+- Ajouter un `.env.example` (variables d'environnement obligatoires) — recommandé pour nouveaux contributeurs.
+- Ajouter protection Basic Auth pour Swagger UI en dev si nécessaire.
 
-Cette approche permet un développement rapide et une meilleure cohérence initiale.  
-À terme, l’objectif est de **découper l’application en microservices**, suivant une **architecture orientée services (AOS)** :
-- Un service **User**
-- Un service **Review**
-- Un service **Suscriber / Suscribed**
-- Un service **Notification**
-
----
-## 🔮 Perspectives d’avenir
-
-- Mise en place d’une **API Gateway** après le découpage complet en microservices  
-- Création d’un **module de représentation graphique** basé sur les données utilisateurs  
-- Ajout d’un **système d’envoi d’emails de notification** pour informer les utilisateurs de leurs réalisations  
-- **Déploiement complet avec Docker** et orchestration des services  
-- **Ouverture du projet en open-source** pour favoriser la contribution communautaire  
-- Mise en place d’une **authentification avancée** (JWT / OAuth2) 
-
----
-## 🧩 Modèle de donnée
-![Modèle de donnée de l'application](images/model_donnees/md_v1.png)
-
----
-## 🌐 Déploiement
-
-L’API est actuellement en cours de réalisation et n'est pas encore accessible au public.
-
-Lien du dépot github : 
-👉 https://github.com/LittleBook-Project/LittleBook_Back/
-Lien de production :
-👉 **En attente de la fin complète du projet**
+Si tu veux, je peux :
+- créer `auth-service/README.md` (fait),
+- ajouter `.env.example` automatiquement,
+- sécuriser Swagger UI par BasicAuth en dev,
+- créer un script `smoke-test.ps1`.

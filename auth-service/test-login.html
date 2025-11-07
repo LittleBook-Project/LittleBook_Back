@@ -75,7 +75,7 @@
           console.log("✅ ID Token Firebase :", idToken);
           alert("Ton ID token est dans la console navigateur !");
 
-          const resp = await fetch("http://localhost:8080/api/auth/me", {
+          const resp = await fetch("http://localhost:8081/api/auth/me", {
             headers: { Authorization: `Bearer ${idToken}` },
           });
           const text = await resp.text();
