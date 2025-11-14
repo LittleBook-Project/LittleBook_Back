@@ -60,7 +60,7 @@ Exemples (PowerShell) :
 
 ```powershell
 # définir les variables (Windows PowerShell)
-$env:FIREBASE_CREDENTIALS = 'C:\path\to\firebase-sa.json'
+$env:FIREBASE_CREDENTIALS = "C:\Users\mathis\OneDrive - Universite Evry Val d'Essonne\M2\projet1\front\littlebook.json"
 $env:FIREBASE_PROJECT_ID = 'my-firebase-project'
 $env:SPRING_PROFILES_ACTIVE = 'dev'   # active swagger-ui
 

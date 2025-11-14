@@ -82,6 +82,31 @@ mvn clean install
 ```bash
 mvn spring-boot:run
 ```
+## 🚀 Démarrage rapide avec Docker Compose
+
+Pour lancer les microservices principaux (admin, auth, user) sans configuration complexe:
+
+1) Placez votre fichier de credentials Firebase à la racine du dépôt et renommez-le `littlebook.json`.
+  - Ce fichier est ignoré par Git (déjà ajouté dans `.gitignore`).
+  - Il sera automatiquement copié dans l'image Docker d'`auth-service` et référencé via la variable `FIREBASE_CREDENTIALS=/app/littlebook.json`.
+
+2) Lancez Docker Compose depuis la racine du dépôt:
+
+```powershell
+# Windows PowerShell
+docker-compose up --build
+```
+
+3) Accédez aux Swagger UI:
+- Admin-service: http://localhost:8082/swagger-ui.html
+- Auth-service: http://localhost:8081/swagger-ui.html
+- User-service: http://localhost:8083/swagger-ui.html
+
+Notes:
+- Les ports sont mappés 1:1 entre hôte et conteneur (8081/8082/8083) pour correspondre aux `server.port` définis dans chaque `application.yml`.
+- Le service `auth-service` active Swagger UI en profil `dev` via Docker Compose.
+- Si vous préférez un lancement détaché: `docker-compose up --build -d` puis `docker-compose down` pour arrêter.
+
 ---
 ## 🧩 Implémentation actuelle
 
