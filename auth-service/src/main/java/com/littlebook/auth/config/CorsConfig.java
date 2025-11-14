@@ -27,7 +27,7 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-    // origines (liste explicite - NE PAS utiliser "*" lorsque allowCredentials=true)
+    // origines (liste explicite depuis application.yml)
         config.setAllowedOrigins(props.getAllowedOrigins());
 
     // méthodes autorisées

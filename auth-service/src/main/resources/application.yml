@@ -13,8 +13,7 @@ security:
   cors:
   # Origines autorisées pour CORS. NE PAS utiliser "*" lorsque allowCredentials=true.
     allowed-origins:
-      - "http://127.0.0.1:5500"
-      - "http://localhost:5500"
+      - "http://localhost:80"
       - "http://localhost:5173"
   # Optionnel : remplacer méthodes/en-têtes/en-têtes-exposés si nécessaire
     allowed-methods:
