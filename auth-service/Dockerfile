@@ -12,8 +12,6 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /workspace/target/*.jar app.jar
 
-# Copy Firebase credentials from repo root (littlebook.json is in .gitignore)
-COPY littlebook.json /app/littlebook.json
 
 EXPOSE 8081
 ENTRYPOINT ["java","-jar","/app/app.jar"]

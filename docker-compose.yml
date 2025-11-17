@@ -7,7 +7,7 @@ services:
       dockerfile: admin-service/Dockerfile
     container_name: littlebook_admin
     ports:
-      - "8082:8082"
+      - "8085:8085"
     restart: unless-stopped
 
   auth-service:
@@ -29,6 +29,24 @@ services:
       dockerfile: user-service/Dockerfile
     container_name: littlebook_user
     ports:
+      - "8082:8082"
+    restart: unless-stopped
+
+  review-service:
+    build:
+      context: .
+      dockerfile: review-service/Dockerfile
+    container_name: littlebook_review
+    ports:
       - "8083:8083"
     restart: unless-stopped
+  book-service:
+    build:
+      context: .
+      dockerfile: book-service/Dockerfile
+    container_name: littlebook_book
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+
 
