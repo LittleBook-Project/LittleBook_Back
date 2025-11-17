@@ -24,96 +24,126 @@ Ce dépôt contient :
 L’objectif de ce dépôt est d’offrir une base solide et évolutive avant le passage vers une **architecture orientée services (AOS)**.
 
 ---
-## 🚀 Stack technique
+## �️ Admin service (microservice)
 
-- [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html) – LTS stable
-- [Spring Boot 3.x](https://spring.io/projects/spring-boot) – framework backend
-- [Lombok](https://projectlombok.org/) – simplification du code (getters, setters, constructeurs)
-- [JUnit 5](https://junit.org/junit5/) – tests unitaires et d’intégration
-- [Supabase](https://supabase.com) – base de données relationnelle (PostgreSQL)
-- [Firebase](https://firebase.google.com/) – services cloud (authentification, notifications, storage…)
-- [Open library](https://openlibrary.org/developers/api) - Récupération de l'ensemble des livres, genre, ...
+Ce dépôt contient désormais une structure permettant d'extraire un microservice dédié **admin**. Les points clés :
 
----
-## 📦 Installation
+- Entrypoint : `com.littlebook.admin.AdminApplication` (scan limité au package `com.littlebook.admin`).
+- Port par défaut : `8081` (fichier `src/main/resources/application.yml`).
+- Endpoints d'exemple : `/admin/health`, `/admin/ping`.
+- Le code existant (controllers pour Book/Review/Subscription/User) reste présent pour archivage mais n'est plus scanné par l'application admin (pour éviter les conflits lors du démarrage).
 
-### 1. Cloner le projet
-```bash
-git clone https://github.com/MOUNIAT-1002/LittleBook_Back.git
-cd LittleBook_Back
-```
-
-### 2. Activer les Git hooks (protection secrets)
-
-**Une seule fois après le clone :**
+Pour démarrer uniquement le microservice admin en local :
 
 ```bash
-# Sur Linux/Mac
-./setup-hooks.sh
+ # admin-service — microservice Admin
 
-# Sur Windows (PowerShell)
-.\setup-hooks.ps1
-```
----
-### 3. Setup développeur (Authentification Google via Firebase)
+ Ce dossier contient le microservice "admin" extrait du backend LittleBook.
+ Il s'agit d'un petit service Spring Boot destiné à exposer des opérations d'administration (monitoring, gestion des utilisateurs/rôles, audits).
 
-1. Demander la **clé de service** (fichier JSON) dans le coffre-fort d’équipe.
-2. Placer le fichier en local, hors dépôt, p.ex.:
-   - macOS/Linux: `~/littlebook/secrets/firebase-adminsdk.json`
-   - Windows: `C:\Users\<you>\littlebook\secrets\firebase-adminsdk.json`
-3. Exporter les variables d’environnement:
-   - macOS/Linux:
-     ```bash
-     export FIREBASE_PROJECT_ID=littlebook-b2d2d
-     export FIREBASE_CREDENTIALS=/ABSOLU/vers/secrets/firebase-sa.json
-     ```
-   - Windows (PowerShell):
-     ```powershell
-     $env:FIREBASE_PROJECT_ID = "littlebook-b2d2d"
-     $env:FIREBASE_CREDENTIALS = "C:\<chemin>\secrets\firebase-sa.json"
-     ```
+ Principales caractéristiques
+ - Entrypoint : `com.littlebook.admin.AdminApplication`
+ - Port par défaut : 8081
+ - Endpoints d'exemple : `/admin/health`, `/admin/ping`
 
-## ⚙️ Compilation et execution 
-### 1. Compilation
-```bash
-mvn clean install
-```
-### 2. Execution
-```bash
-mvn spring-boot:run
-```
----
-## 🧩 Implémentation actuelle
+ Important : ce README couvre uniquement le microservice `admin-service`. Les sources plus larges du backend (monolithe) ont été archivées ou déplacées — voir `archived/` si présent.
 
-L’architecture actuelle suit une approche **monolithique** : toutes les fonctionnalités (utilisateurs, relations, posts, etc.) sont regroupées au sein d’une même API Spring Boot.
+ ## Structure du projet
 
-Cette approche permet un développement rapide et une meilleure cohérence initiale.  
-À terme, l’objectif est de **découper l’application en microservices**, suivant une **architecture orientée services (AOS)** :
-- Un service **User**
-- Un service **Review**
-- Un service **Suscriber / Suscribed**
-- Un service **Notification**
+ - `src/main/java/com/littlebook/admin` : code spécifique au microservice (controller, service, repository, config, dto)
+ - `src/main/resources/application.yml` : configuration locale (H2 par défaut)
+ - `Dockerfile` : build/run en image
+ - `scripts/` : scripts d'aide (archive, cleanup)
 
----
-## 🔮 Perspectives d’avenir
+ ## Prérequis
 
-- Mise en place d’une **API Gateway** après le découpage complet en microservices  
-- Création d’un **module de représentation graphique** basé sur les données utilisateurs  
-- Ajout d’un **système d’envoi d’emails de notification** pour informer les utilisateurs de leurs réalisations  
-- **Déploiement complet avec Docker** et orchestration des services  
-- **Ouverture du projet en open-source** pour favoriser la contribution communautaire  
-- Mise en place d’une **authentification avancée** (JWT / OAuth2) 
+ - Java 17+ (ou Java 21 présent sur la machine de build)
+ - Maven 3.8+
+ - Docker (optionnel)
 
----
-## 🧩 Modèle de donnée
-![Modèle de donnée de l'application](images/model_donnees/md_v1.png)
+ ## Variables d'environnement utiles
 
----
-## 🌐 Déploiement
+ - `FIREBASE_PROJECT_ID` — identifiant Firebase (si utilisé)
+ - `FIREBASE_CREDENTIALS` — chemin absolu vers la clé de service Firebase (JSON)
+ - Pour override de la DB en production (exemple) :
+   - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 
-L’API est actuellement en cours de réalisation et n'est pas encore accessible au public.
+ Ne placez jamais de mots de passe en clair dans le repo. Utilisez des variables d'environnement ou un coffre (Vault / GitHub Secrets).
 
-Lien du dépot github : 
-👉 https://github.com/LittleBook-Project/LittleBook_Back/
-Lien de production :
-👉 **En attente de la fin complète du projet**
+ ## Développement — lancer localement
+
+ 1) Compiler le projet (rapide, tests sautés) :
+
+ ```bash
+ cd /Users/justinekosinski/Desktop/ledoux/LittleBook_Back/admin-service
+ mvn -DskipTests clean package
+ ```
+
+ 2) Lancer avec Maven (utilise l'entrypoint admin) :
+
+ ```bash
+ mvn -DskipTests -Dspring-boot.run.main-class=com.littlebook.admin.AdminApplication spring-boot:run
+ ```
+
+ ou lancer le jar produit :
+
+ ```bash
+ java -jar target/littlebook-back-0.0.1-SNAPSHOT.jar
+ ```
+
+ Test rapide des endpoints :
+
+ ```bash
+ curl -sS http://localhost:8081/admin/health
+ curl -sS http://localhost:8081/admin/ping
+ ```
+
+ Si vous utilisez un port autre que 8081, passez l'argument `--server.port=XXXX` à la JVM ou à `spring-boot:run`.
+
+ ## Docker
+
+ Build et run :
+
+ ```bash
+ # depuis le dossier admin-service
+ docker build -t littlebook-admin:local .
+ docker run -p 8081:8081 littlebook-admin:local
+ ```
+
+ ## Base de données et scripts SQL
+
+ Par défaut, `application.yml` configure une base H2 en mémoire pour le développement local.
+ Le projet contient des scripts SQL orientés PostgreSQL (ex. `schema.sql`) — ces scripts ne doivent pas être exécutés automatiquement contre H2. Le démarrage local est configuré pour ignorer l'init SQL.
+
+ En production, activez un profil (ex. `prod`) avec une datasource PostgreSQL et utilisez Flyway ou Liquibase pour l'initialisation/les migrations.
+
+ ## Tests
+
+ Exécuter les tests :
+
+ ```bash
+ mvn test
+ ```
+
+ Ajoutez des tests unitaires et d'intégration dans `src/test` pour couvrir le contrôleur admin et la logique métier.
+
+ ## Sécurité
+
+ Actuellement la configuration de sécurité est minimale (dev). Avant production, mettez en place :
+
+ - authentification (JWT / Firebase / OAuth2)
+ - configuration des rôles et permissions pour les endpoints d'administration
+
+ ## Bonnes pratiques & next steps
+
+ - Ne laissez aucune credential sensible commitée. Migrer les secrets vers un vault.
+ - Déplacer la gestion des schémas DB vers Flyway/Liquibase et activer par profil.
+ - Ajouter une pipeline CI qui build, teste et publie l'image Docker.
+ - Ajouter des metrics/opentelemetry et des endpoints d'audit pour l'administration.
+
+ ## Contact / Contributeurs
+
+ Voir la racine du monorepo pour la liste complète des contributeurs.
+
+ ---
+ Petit résumé : ce README vous permet de démarrer rapidement le microservice admin en local, de comprendre la configuration par défaut et les étapes à suivre pour rendre le service prêt pour la production.
