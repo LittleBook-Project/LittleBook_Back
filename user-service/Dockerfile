@@ -14,6 +14,6 @@ WORKDIR /app
 COPY --from=build /workspace/target/*.jar app.jar
 
 # user-service listens on 8083 by default
-EXPOSE 8083
+EXPOSE 8082
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
