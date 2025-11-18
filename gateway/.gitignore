@@ -49,11 +49,10 @@ hs_err_pid*
 /secrets/                       # dossier local où chaque dev range sa clé
 !/secrets/.keep                 # fichier vide pour garder le dossier dans le repo
 
-# Clés Firebase probables (où qu'elles se trouvent)
+# Clés Firebase probables (où qu’elles se trouvent)
 *service-account*.json
 *firebase*-adminsdk*.json
 firebase-*.json
-littlebook.json
 
 # Fichiers d'environnement
 .env

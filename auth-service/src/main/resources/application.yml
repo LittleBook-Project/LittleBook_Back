@@ -1,0 +1,56 @@
+## Configuration minimale pour auth-service (service indépendant)
+# Les valeurs sensibles doivent être fournies via des variables d'environnement
+# Exemple : setx DB_URL "jdbc:postgresql://..." (Windows) ou utiliser un .env en dev
+
+spring:
+  application:
+    name: auth-service
+
+server:
+  port: 8081
+
+security:
+  cors:
+  # Origines autorisées pour CORS. NE PAS utiliser "*" lorsque allowCredentials=true.
+    allowed-origins:
+      - "http://localhost:80"
+      - "http://localhost:5173"
+  # Optionnel : remplacer méthodes/en-têtes/en-têtes-exposés si nécessaire
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - X-Requested-With
+    exposed-headers:
+      - Authorization
+      - Content-Type
+      - Location
+    max-age: 3600
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  firebase:
+    # Chemin vers le fichier de credentials JSON
+    credentials-path: ${FIREBASE_CREDENTIALS:}
+    project-id: ${FIREBASE_PROJECT_ID:}
+
+# Logging (niveau par défaut)
+logging:
+  level:
+    root: INFO
+
+# Désactiver Swagger UI par défaut ; l'activer dans le profil dev (application-dev.yml)
+springdoc:
+  swagger-ui:
+    enabled: false

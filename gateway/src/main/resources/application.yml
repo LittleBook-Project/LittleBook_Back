@@ -11,8 +11,8 @@ spring:
       enabled: always # couleurs dans la console
 
   datasource:
-    url: jdbc:postgresql://aws-1-eu-west-3.pooler.supabase.com:6543/postgres?sslmode=require
-    username: postgres.epgxaozzqwdlbwtuefye
+    url: jdbc:postgresql://db.epgxaozzqwdlbwtuefye.supabase.co:5432/postgres?sslmode=require
+    username: postgres
     password: Need2eatandsleep@diner
     driver-class-name: org.postgresql.Driver
 
