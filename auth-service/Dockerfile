@@ -11,7 +11,7 @@ RUN mvn -B -DskipTests package
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /workspace/target/*.jar app.jar
-
+COPY littlebook.json /app/littlebook.json
 
 EXPOSE 8081
 ENTRYPOINT ["java","-jar","/app/app.jar"]
