@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api")
@@ -31,13 +32,36 @@ public class AuthController {
         if (auth == null)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         @SuppressWarnings("unchecked")
-        Map<String, Object> details = (Map<String, Object>) auth.getDetails();
-        return Map.of(
-                "uid", auth.getName(),
-                "email", details.get("email"),
-                "name", details.get("name"),
-                "picture", details.get("picture"),
-                "roles", auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList());
+        Map<String, Object> details;
+        Object rawDetails = auth.getDetails();
+        if (rawDetails instanceof Map<?, ?>) {
+            details = (Map<String, Object>) rawDetails;
+        } else {
+            details = new HashMap<>();
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("uid", auth.getName());
+        result.put("email", details.get("email"));
+
+        Object name = details.get("name");
+        if(name != null) {
+            result.put("name", name);
+        }
+
+        Object picture = details.get("picture");
+        if(picture != null) {
+            result.put("picture", picture);
+        }
+
+        result.put(
+            "roles",
+            auth.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .toList()
+        );
+
+        return result;
     }
 
     @Operation(summary = "Ping public",
