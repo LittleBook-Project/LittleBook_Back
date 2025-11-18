@@ -152,7 +152,38 @@ Le projet utilise une approche **CI/CD automatisée** avec GitHub Actions.
 2. **Push des images Docker** vers GitHub Container Registry (`ghcr.io`)
 3. **Tag automatique** avec le SHA du commit et `latest` pour la branche principale
 
-#### Déployer sur un serveur
+#### Déploiement gratuit sur Render.com (Recommandé)
+
+**Render.com** offre un plan gratuit parfait pour les projets comme LittleBook.
+
+1. **Créez un compte sur [Render.com](https://render.com)**
+
+2. **Connectez votre dépôt GitHub** :
+   - Dashboard → New → Blueprint
+   - Sélectionnez le dépôt `LittleBook_Back`
+   - Render détectera automatiquement le fichier `render.yaml`
+
+3. **Configurez les secrets** (uniquement pour auth-service) :
+   - Dans le dashboard Render, allez sur le service `littlebook-auth`
+   - Environment → Add Secret File
+   - Nom : `FIREBASE_CREDENTIALS`
+   - Contenu : Collez le contenu de votre fichier `littlebook.json`
+
+4. **Déployez** :
+   - Cliquez sur "Apply" pour déployer tous les services
+   - Render build et déploie automatiquement chaque microservice
+   - Vous obtiendrez une URL publique pour chaque service
+
+5. **Accédez à vos services** :
+   - `https://littlebook-admin.onrender.com`
+   - `https://littlebook-auth.onrender.com`
+   - `https://littlebook-user.onrender.com`
+   - `https://littlebook-review.onrender.com`
+   - `https://littlebook-book.onrender.com`
+
+⚠️ **Note** : Le plan gratuit met les services en veille après 15 min d'inactivité (démarrage ~30s).
+
+#### Déployer sur un serveur VPS
 
 1. **Sur votre serveur de production**, installez Docker et Docker Compose
 
@@ -185,11 +216,12 @@ Le projet utilise une approche **CI/CD automatisée** avec GitHub Actions.
    docker-compose -f docker-compose.prod.yml ps
    ```
 
-#### Plateformes de déploiement recommandées
+#### Autres plateformes de déploiement
 
-- **VPS** : DigitalOcean, OVH, AWS EC2
-- **PaaS** : Railway.app, Render.com, Fly.io
-- **Cloud** : AWS ECS, Google Cloud Run, Azure Container Instances
+- **Render.com** : ✅ Gratuit, simple, recommandé (voir ci-dessus)
+- **Railway.app** : Gratuit avec 500h/mois, détection auto Dockerfile
+- **Fly.io** : Gratuit jusqu'à 3 VMs, bon pour microservices
+- **VPS** : DigitalOcean, OVH, AWS EC2 (payant mais plus de contrôle)
 
 #### Notes de sécurité
 
