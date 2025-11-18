@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  admin-service:
+    image: ghcr.io/littlebook-project/littlebook-admin-service:latest
+    container_name: littlebook_admin
+    ports:
+      - "8085:8085"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  auth-service:
+    image: ghcr.io/littlebook-project/littlebook-auth-service:latest
+    container_name: littlebook_auth
+    ports:
+      - "8081:8081"
+    environment:
+      - FIREBASE_CREDENTIALS=/app/littlebook.json
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    secrets:
+      - firebase_credentials
+
+  user-service:
+    image: ghcr.io/littlebook-project/littlebook-user-service:latest
+    container_name: littlebook_user
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  review-service:
+    image: ghcr.io/littlebook-project/littlebook-review-service:latest
+    container_name: littlebook_review
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  book-service:
+    image: ghcr.io/littlebook-project/littlebook-book-service:latest
+    container_name: littlebook_book
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+secrets:
+  firebase_credentials:
+    file: ./littlebook.json
+
+# Pour utiliser ce fichier:
+# 1. Assurez-vous que les images sont disponibles dans GitHub Container Registry
+# 2. Authentifiez-vous: echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+# 3. Configurez les variables d'environnement (créez un fichier .env.prod)
+# 4. Lancez: docker-compose -f docker-compose.prod.yml up -d
