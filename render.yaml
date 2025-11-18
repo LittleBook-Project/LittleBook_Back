@@ -1,0 +1,73 @@
+# Render Blueprint pour LittleBook
+# Déploie tous les microservices gratuitement sur Render.com
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  # Admin Service
+  - type: web
+    name: littlebook-admin
+    runtime: docker
+    dockerfilePath: ./admin-service/Dockerfile
+    dockerContext: .
+    plan: free
+    env: docker
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+    healthCheckPath: /actuator/health
+
+  # Auth Service
+  - type: web
+    name: littlebook-auth
+    runtime: docker
+    dockerfilePath: ./auth-service/Dockerfile
+    dockerContext: .
+    plan: free
+    env: docker
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: FIREBASE_PROJECT_ID
+        value: littlebook-b2d2d
+      - key: FIREBASE_CREDENTIALS
+        sync: false  # À configurer manuellement dans Render Dashboard
+    healthCheckPath: /actuator/health
+
+  # User Service
+  - type: web
+    name: littlebook-user
+    runtime: docker
+    dockerfilePath: ./user-service/Dockerfile
+    dockerContext: .
+    plan: free
+    env: docker
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+    healthCheckPath: /actuator/health
+
+  # Review Service
+  - type: web
+    name: littlebook-review
+    runtime: docker
+    dockerfilePath: ./review-service/Dockerfile
+    dockerContext: .
+    plan: free
+    env: docker
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+    healthCheckPath: /actuator/health
+
+  # Book Service
+  - type: web
+    name: littlebook-book
+    runtime: docker
+    dockerfilePath: ./book-service/Dockerfile
+    dockerContext: .
+    plan: free
+    env: docker
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+    healthCheckPath: /actuator/health
