@@ -1,0 +1,41 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: user-service
+
+  main:
+    banner-mode: console
+    lazy-initialization: false
+
+  datasource:
+    url: jdbc:h2:mem:userdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+
+  # Force SQL initialization from schema.sql / data.sql for the in-memory test DB
+  sql:
+    init:
+      mode: always
+
+  # Defer datasource initialization until after Hibernate (not needed when ddl-auto=none)
+  # spring.jpa.defer-datasource-initialization: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# Firebase config (use environment variables)
+app:
+  firebase:
+    credentials-path: ${FIREBASE_CREDENTIALS:}
+    project-id: ${FIREBASE_PROJECT_ID:}

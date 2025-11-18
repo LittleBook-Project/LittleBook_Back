@@ -82,32 +82,6 @@ mvn clean install
 ```bash
 mvn spring-boot:run
 ```
-## 🚀 Démarrage rapide avec Docker Compose
-
-Pour lancer les microservices principaux (admin, auth, user) sans configuration complexe:
-
-1) Placez votre fichier de credentials Firebase à la racine du dépôt et renommez-le `littlebook.json`.
-  - Ce fichier est ignoré par Git (déjà ajouté dans `.gitignore`).
-  - Il sera automatiquement copié dans l'image Docker d'`auth-service` et référencé via la variable `FIREBASE_CREDENTIALS=/app/littlebook.json`.
-
-2) Lancez Docker Compose depuis la racine du dépôt:
-
-```powershell
-# Windows PowerShell
-```
-
-3) Accédez aux Swagger UI:
-- Admin-service: http://localhost:8085/swagger-ui.html
-- Auth-service: http://localhost:8081/swagger-ui.html
-- User-service: http://localhost:8082/swagger-ui.html
-- Review-service: http://localhost:8083/swagger-ui.html
-- Book-service: http://localhost:8084/swagger-ui.html
-
-Notes:
-- Les ports sont mappés 1:1 entre hôte et conteneur pour correspondre aux `server.port` définis dans chaque `application.yml`.
-- Le service `auth-service` active Swagger UI en profil `dev` via Docker Compose.
-- Si vous préférez un lancement détaché: `docker-compose up --build -d` puis `docker-compose down` pour arrêter.
-
 ---
 ## 🧩 Implémentation actuelle
 
@@ -137,75 +111,9 @@ Cette approche permet un développement rapide et une meilleure cohérence initi
 ---
 ## 🌐 Déploiement
 
-### Déploiement en développement (local)
-
-Pour lancer les microservices en local avec Docker Compose, voir la section "Démarrage rapide avec Docker Compose" ci-dessus.
-
-### Déploiement en production
-
-Le projet utilise une approche **CI/CD automatisée** avec GitHub Actions.
-
-#### Pipeline CI/CD
-
-À chaque push sur les branches `main` :
-1. **Build automatique** de chaque microservice
-2. **Push des images Docker** vers GitHub Container Registry (`ghcr.io`)
-3. **Tag automatique** avec le SHA du commit et `latest` pour la branche principale
-
-#### Déployer sur un serveur
-
-1. **Sur votre serveur de production**, installez Docker et Docker Compose
-
-2. **Authentifiez-vous à GitHub Container Registry** :
-   ```bash
-   echo $GITHUB_TOKEN | docker login ghcr.io -u VOTRE_USERNAME --password-stdin
-   ```
-
-3. **Clonez le dépôt** :
-   ```bash
-   git clone https://github.com/LittleBook-Project/LittleBook_Back.git
-   cd LittleBook_Back
-   ```
-
-4. **Configurez les variables d'environnement** :
-   ```bash
-   cp .env.prod.example .env.prod
-   # Éditez .env.prod avec vos valeurs
-   ```
-
-5. **Placez votre fichier de credentials Firebase** `littlebook.json` à la racine
-
-6. **Lancez les services** :
-   ```bash
-   docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
-   ```
-
-7. **Vérifiez le statut** :
-   ```bash
-   docker-compose -f docker-compose.prod.yml ps
-   ```
-
-#### Plateformes de déploiement recommandées
-
-- **VPS** : DigitalOcean, OVH, AWS EC2
-- **PaaS** : Railway.app, Render.com, Fly.io
-- **Cloud** : AWS ECS, Google Cloud Run, Azure Container Instances
-
-#### Notes de sécurité
-
-- ⚠️ En production, configurez un **reverse proxy** (Nginx, Traefik) avec HTTPS
-- ⚠️ Restreignez les **CORS origins** dans `application.yml` à votre domaine frontend
-- ⚠️ Utilisez des **secrets** pour les credentials Firebase (ne pas commiter `littlebook.json`)
-- ⚠️ Configurez un **firewall** pour n'exposer que les ports nécessaires
-
----
-## 🔗 Liens
+L’API est actuellement en cours de réalisation et n'est pas encore accessible au public.
 
 Lien du dépot github : 
 👉 https://github.com/LittleBook-Project/LittleBook_Back/
-
-Images Docker :
-👉 https://github.com/orgs/LittleBook-Project/packages
-
 Lien de production :
 👉 **En attente de la fin complète du projet**

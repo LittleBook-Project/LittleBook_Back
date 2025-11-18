@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  admin-service:
+    build:
+      context: .
+      dockerfile: admin-service/Dockerfile
+    container_name: littlebook_admin
+    ports:
+      - "8085:8085"
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: littlebook_auth
+    ports:
+      - "8081:8081"
+    environment:
+      - FIREBASE_CREDENTIALS=/app/littlebook.json
+      - FIREBASE_PROJECT_ID=littlebook-b2d2d
+      - SPRING_PROFILES_ACTIVE=dev
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: littlebook_user
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+
+  review-service:
+    build:
+      context: .
+      dockerfile: review-service/Dockerfile
+    container_name: littlebook_review
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+  book-service:
+    build:
+      context: .
+      dockerfile: book-service/Dockerfile
+    container_name: littlebook_book
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+
+
