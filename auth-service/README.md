@@ -10,7 +10,7 @@ Ce README décrit le service, son architecture, son déploiement local/productio
 
 - Rôle : service autonome de validation d'ID tokens Firebase. Il fournit des endpoints REST permettant aux frontends de vérifier l'identité d'un utilisateur et d'obtenir des informations de profil.
 - Contexte technologique : Java 17, Spring Boot 3.3.x, Spring Security 6, Firebase Admin SDK, springdoc OpenAPI.
-- Caractéristiques : stateless (pas de base de données), s'intègre avec Firebase pour valider les tokens émis par Google Sign-In.
+- Caractéristiques : stateless (pas de base de données), s'intègre avec Firebase pour valider les tokens émis par Google et Microsoft Sign-In.
 
 Pourquoi stateless ?
 - Le service ne conserve aucun état utilisateur côté serveur : il valide des tokens fournis par le client et retourne des informations extraites du token. Cela facilite le scaling horizontal et rend le service simple à déployer.
@@ -102,8 +102,6 @@ springdoc:
     enabled: false   # activé via application-dev.yml
 ```
 
-⚠️ À compléter : gérer les secrets via Vault / KMS en prod.
-
 ## 5. Endpoints
 
 1) GET /api/public/ping
@@ -161,7 +159,7 @@ mvn -f auth-service/pom.xml -DskipTests package
 ```
 
 Variables à fournir en production :
-- `FIREBASE_CREDENTIALS` (ou utilisez ADC via `GOOGLE_APPLICATION_CREDENTIALS`),
+- `FIREBASE_CREDENTIALS`,
 - `FIREBASE_PROJECT_ID`,
 - `SPRING_PROFILES_ACTIVE` (ne PAS activer `dev` en prod). 
 
@@ -189,32 +187,3 @@ Tests inclus :
 Comment mocker Firebase Admin pour les tests :
 - Les tests utilisent `@MockBean` pour `FirebaseAuth` et `FirebaseApp` (voir `SecurityIntegrationTest`). Ainsi la validation de token est simulée et les tests sont déterministes.
 
-
-
-## 9. FAQ & Conseils
-
-- Pourquoi pas de base de données ?
-  - Le service ne stocke aucun état : il se contente de vérifier des tokens signés par Firebase et retourne les informations. Ajouter une DB serait nécessaire uniquement si on veut garder des sessions, logs personnalisés ou lier des profils à des données internes.
-
-- Ajouter d'autres providers OAuth ?
-  - Abstraire la vérification dans un service `TokenVerificationService` et fournir des implémentations pour Firebase, Auth0, etc. Le filtre pourrait déléguer à ce service.
-
-- Étendre les endpoints
-  - Ajouter `/api/auth/refresh` si l'on souhaite gérer des refresh tokens côté serveur (nécessite stockage et revocation logiciel).
-
-## 10. Licence & auteurs
-
-Projet LittleBook — licence : voir `LICENSE` à la racine du dépôt.
-
----
-
-⚠️ À compléter / recommandations futures
-- Ajouter `application-prod.yml` et verrouiller Actuator/Swagger.
-- Ajouter un `.env.example` (variables d'environnement obligatoires) — recommandé pour nouveaux contributeurs.
-- Ajouter protection Basic Auth pour Swagger UI en dev si nécessaire.
-
-Si tu veux, je peux :
-- créer `auth-service/README.md` (fait),
-- ajouter `.env.example` automatiquement,
-- sécuriser Swagger UI par BasicAuth en dev,
-- créer un script `smoke-test.ps1`.

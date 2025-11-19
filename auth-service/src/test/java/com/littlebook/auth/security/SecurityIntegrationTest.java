@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
+import java.util.Map;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -80,6 +81,46 @@ class SecurityIntegrationTest {
         when(firebaseAuth.verifyIdToken("bad")).thenThrow(authEx);
 
         mvc.perform(get("/api/auth/me").header("Authorization", "Bearer bad"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void me_with_microsoft_token_unverified_email_is_200() throws Exception {
+        // Simule une authentification Microsoft fédérée où l'email n'est pas vérifié
+        FirebaseToken token = mock(FirebaseToken.class);
+        when(token.getUid()).thenReturn("ms-uid-1");
+        when(token.getEmail()).thenReturn("msuser@contoso.com");
+        when(token.getName()).thenReturn(null);
+        when(token.getPicture()).thenReturn(null);
+        when(token.isEmailVerified()).thenReturn(false);
+
+        // Ajouter la claim firebase.sign_in_provider = "microsoft.com"
+        when(token.getClaims()).thenReturn(Map.of("firebase", Map.of("sign_in_provider", "microsoft.com")));
+
+        when(firebaseAuth.verifyIdToken("good-ms")).thenReturn(token);
+
+        mvc.perform(get("/api/auth/me").header("Authorization", "Bearer good-ms"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.uid").value("ms-uid-1"))
+                .andExpect(jsonPath("$.email").value("msuser@contoso.com"));
+    }
+
+    @Test
+    void me_with_unauthorized_provider_github_is_401() throws Exception {
+        // Simule un token provenant d'un fournisseur fédéré non supporté (github.com)
+        FirebaseToken token = mock(FirebaseToken.class);
+        when(token.getUid()).thenReturn("gh-uid-1");
+        when(token.getEmail()).thenReturn("ghuser@github.com");
+        when(token.getName()).thenReturn("Gh User");
+        when(token.getPicture()).thenReturn(null);
+        when(token.isEmailVerified()).thenReturn(true);
+
+        when(token.getClaims()).thenReturn(Map.of("firebase", Map.of("sign_in_provider", "github.com")));
+
+        when(firebaseAuth.verifyIdToken("bad-gh")).thenReturn(token);
+
+        mvc.perform(get("/api/auth/me").header("Authorization", "Bearer bad-gh"))
                 .andExpect(status().isUnauthorized());
     }
 }
