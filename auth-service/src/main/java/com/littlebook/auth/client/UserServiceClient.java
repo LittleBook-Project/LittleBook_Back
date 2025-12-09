@@ -1,14 +1,15 @@
 package com.littlebook.auth.client;
 
 import com.littlebook.auth.dto.CreateUserRequest;
+import com.littlebook.auth.dto.UserResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  * Client pour communiquer avec user-service
@@ -27,24 +28,25 @@ public class UserServiceClient {
     }
 
     /**
-     * Appelle POST /user/oauth pour créer ou mettre à jour un utilisateur
-     * @param request les informations de l'utilisateur OAuth
+     * Appelle POST /user/oauth pour créer ou mettre à jour un utilisateur et retourne sa fiche.
      */
-    public void syncUser(CreateUserRequest request) {
+    public Optional<UserResponse> syncUser(CreateUserRequest request) {
         try {
-            webClient.post()
-                    .uri("/user/oauth")
+                UserResponse response = webClient.post()
+                    .uri("/api/user/oauth")
                     .bodyValue(request)
                     .retrieve()
-                    .bodyToMono(Void.class)
+                    .bodyToMono(UserResponse.class)
                     .timeout(Duration.ofSeconds(5))
                     .block();
-            
+
             log.debug("User synchronized with user-service: {}", request.email());
+            return Optional.ofNullable(response);
         } catch (Exception e) {
             // Ne pas bloquer l'authentification si user-service est indisponible
-            log.error("Failed to sync user with user-service for email {}: {}", 
+            log.error("Failed to sync user with user-service for email {}: {}",
                     request.email(), e.getMessage());
+            return Optional.empty();
         }
     }
 }

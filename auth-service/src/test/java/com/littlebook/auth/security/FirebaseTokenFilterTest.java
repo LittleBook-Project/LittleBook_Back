@@ -2,8 +2,11 @@ package com.littlebook.auth.security;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import com.littlebook.auth.client.AdminServiceClient;
 import com.littlebook.auth.client.UserServiceClient;
 import com.littlebook.auth.dto.CreateUserRequest;
+import com.littlebook.auth.dto.LoginRecordRequest;
+import com.littlebook.auth.dto.UserResponse;
 import com.littlebook.auth.enums.AuthProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,11 +37,17 @@ class FirebaseTokenFilterTest {
     @Mock
     private UserServiceClient userServiceClient;
 
+    @Mock
+    private AdminServiceClient adminServiceClient;
+
     @InjectMocks
     private FirebaseTokenFilter filter;
 
     @Captor
     private ArgumentCaptor<CreateUserRequest> requestCaptor;
+
+    @Captor
+    private ArgumentCaptor<LoginRecordRequest> loginCaptor;
 
     @Test
     void successful_google_login_syncs_user_to_user_service() throws Exception {
@@ -52,6 +61,12 @@ class FirebaseTokenFilterTest {
         when(token.getClaims()).thenReturn(Map.of("firebase", Map.of("sign_in_provider", "google.com")));
 
         when(firebaseAuth.verifyIdToken("valid-token")).thenReturn(token);
+        when(userServiceClient.syncUser(any())).thenReturn(java.util.Optional.of(
+            new UserResponse(java.util.UUID.fromString("00000000-0000-0000-0000-000000000123"),
+                "user@gmail.com", "Google User", "https://example.com/pic.jpg",
+                AuthProvider.GOOGLE, "google-uid-123", true, "ROLE_USER",
+                null, null, null, true)
+        ));
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer valid-token");
@@ -63,6 +78,7 @@ class FirebaseTokenFilterTest {
 
         // Assert - vérifie que userServiceClient a été appelé
         verify(userServiceClient, times(1)).syncUser(requestCaptor.capture());
+        verify(adminServiceClient, times(1)).recordLogin(eq(java.util.UUID.fromString("00000000-0000-0000-0000-000000000123")), loginCaptor.capture());
         
         CreateUserRequest capturedRequest = requestCaptor.getValue();
         assertEquals(AuthProvider.GOOGLE, capturedRequest.provider());
@@ -85,6 +101,12 @@ class FirebaseTokenFilterTest {
         when(token.getClaims()).thenReturn(Map.of("firebase", Map.of("sign_in_provider", "microsoft.com")));
 
         when(firebaseAuth.verifyIdToken("valid-ms-token")).thenReturn(token);
+        when(userServiceClient.syncUser(any())).thenReturn(java.util.Optional.of(
+            new UserResponse(java.util.UUID.fromString("00000000-0000-0000-0000-000000000456"),
+                "user@outlook.com", "MS User", null,
+                AuthProvider.MICROSOFT, "ms-uid-456", false, "ROLE_USER",
+                null, null, null, true)
+        ));
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer valid-ms-token");
@@ -96,7 +118,8 @@ class FirebaseTokenFilterTest {
 
         // Assert
         verify(userServiceClient, times(1)).syncUser(requestCaptor.capture());
-        
+        verify(adminServiceClient, times(1)).recordLogin(eq(java.util.UUID.fromString("00000000-0000-0000-0000-000000000456")), loginCaptor.capture());
+
         CreateUserRequest capturedRequest = requestCaptor.getValue();
         assertEquals(AuthProvider.MICROSOFT, capturedRequest.provider());
         assertEquals("ms-uid-456", capturedRequest.providerId());
@@ -128,6 +151,7 @@ class FirebaseTokenFilterTest {
 
         // Assert - userServiceClient ne doit PAS être appelé
         verify(userServiceClient, never()).syncUser(any());
+        verify(adminServiceClient, never()).recordLogin(any(), any());
     }
 
     @Test
@@ -143,5 +167,6 @@ class FirebaseTokenFilterTest {
         // Assert
         verify(firebaseAuth, never()).verifyIdToken(anyString());
         verify(userServiceClient, never()).syncUser(any());
+        verify(adminServiceClient, never()).recordLogin(any(), any());
     }
 }

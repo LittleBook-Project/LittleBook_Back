@@ -49,6 +49,9 @@ app:
   user-service:
     # URL du user-service pour synchroniser les utilisateurs
     url: ${USER_SERVICE_URL:http://localhost:8082}
+  admin-service:
+    # URL du admin-service pour enregistrer les événements de connexion
+    url: ${ADMIN_SERVICE_URL:http://localhost:8085}
 
 # Logging (niveau par défaut)
 logging:
