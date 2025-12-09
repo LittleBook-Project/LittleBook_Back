@@ -17,7 +17,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - FIREBASE_CREDENTIALS=/app/littlebook.json
+      - FIREBASE_CREDENTIALS=
       - FIREBASE_PROJECT_ID=littlebook-b2d2d
       - SPRING_PROFILES_ACTIVE=dev
       - SERVER_PORT=8081
@@ -25,6 +25,7 @@ services:
       - ./littlebook.json:/app/littlebook.json:ro
     networks:
       - littlebook-network
+
     restart: unless-stopped
 
   # ========================================
