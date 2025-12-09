@@ -18,11 +18,9 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - FIREBASE_CREDENTIALS=/app/littlebook.json
+      - FIREBASE_CREDENTIALS=
       - FIREBASE_PROJECT_ID=littlebook-b2d2d
       - SPRING_PROFILES_ACTIVE=dev
-    volumes:
-      - ./littlebook.json:/app/littlebook.json:ro
     restart: unless-stopped
 
   user-service:
