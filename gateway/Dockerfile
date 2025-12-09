@@ -1,8 +1,8 @@
-### Dockerfile multi-stage pour gateway (monolithe en transition)
+### Multi-stage Dockerfile for API Gateway
 FROM maven:3.9.4-eclipse-temurin-17 AS build
 WORKDIR /workspace
 
-# Copy only gateway module
+# Copy gateway module (standalone build)
 COPY gateway/pom.xml pom.xml
 COPY gateway/src src
 
@@ -12,5 +12,8 @@ RUN mvn -B -DskipTests package
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /workspace/target/*.jar app.jar
+
+# Gateway listens on 8080 by default
 EXPOSE 8080
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

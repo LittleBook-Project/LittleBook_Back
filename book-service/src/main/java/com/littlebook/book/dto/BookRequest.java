@@ -1,17 +1,33 @@
 package com.littlebook.book.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+
 /**
  * Requête pour créer ou modifier un livre.
  */
 public class BookRequest {
 
     private String openlibraryId;
+    
+    @Pattern(regexp = "^\\d{10}$", message = "ISBN-10 must be 10 digits")
     private String isbn10;
+    
+    @Pattern(regexp = "^\\d{13}$", message = "ISBN-13 must be 13 digits")
     private String isbn13;
+    
+    @NotBlank(message = "Title is required")
     private String title;
+    
     private String subtitle;
     private String authors;
+    
+    @Min(value = 1000, message = "Publish year must be >= 1000")
+    @Max(value = 2100, message = "Publish year must be <= 2100")
     private Integer publishYear;
+    
     private String coverUrl;
     private String description;
     private String subjects;

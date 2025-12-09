@@ -17,7 +17,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: true
 
   # Disable automatic execution of SQL scripts for local H2 dev to avoid running
@@ -37,3 +37,10 @@ app:
   firebase:
     credentials-path: ${FIREBASE_CREDENTIALS:}
     project-id: ${FIREBASE_PROJECT_ID:}
+
+# OpenLibrary API configuration
+openlibrary:
+  api:
+    base-url: https://openlibrary.org/search.json
+    timeout: 5000                          # milliseconds
+    max-retries: 3
