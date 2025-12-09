@@ -51,4 +51,20 @@ services:
       - "8084:8084"
     restart: unless-stopped
 
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: littlebook_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db.epgxaozzqwdlbwtuefye.supabase.co:5432/postgres?sslmode=require
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=Need2eatandsleep@diner
+      - FIREBASE_CREDENTIALS=${FIREBASE_CREDENTIALS:-}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-littlebook-b2d2d}
+    restart: unless-stopped
+
+
 

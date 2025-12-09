@@ -1,175 +1,274 @@
-# LittleBook_Back
-# 📘 Backend – Spring Boot 3 + Java 17 + SQL + Firebase
+# admin-service — Microservice Administration
 
-LittleBook est une application de type réseau social visant à permettre aux utilisateurs de partager du contenu, de suivre d'autres membres et d'interagir à travers des publications et commentaires.  
-Ce dépôt correspond à la partie **back-end**, développée avec **Spring Boot**, assurant la gestion des utilisateurs, des rôles et des futures entités (posts, relations, etc.). Ce back sera en communication avec une partie **front-end** réalisé en parallèle avec **React**
+Ce dossier contient le microservice **admin-service**, chargé de l'administration, la surveillance et les statistiques du système LittleBook.
+Il expose des opérations permettant de **monitorer** les activités utilisateurs, **gérer** les données administratives et **collecter** les statistiques d'utilisation.
 
----
-## 👥 Équipe de développement
-
-- **[AlyneLDC](https://github.com/alyneldc)** — Gestion de projet / Responsable backend / documentation
-- **[MathBruu](https://github.com/mathbruu)** — Responsable frontend / intégration / documentation
-- **[MouniaT](https://github.com/MOUNIAT-1002)** — Responsable backend / conception / intégration / documentation
-- **[ThomasKsk](https://github.com/ThomasKsk)** — Base de données / documentation
+Ce README couvre uniquement le périmètre du microservice `admin-service`.
 
 ---
-## 📂 Sommaire
 
-Ce dépôt contient :
-- Le **code source du back-end en Java - Spring Boot**
-- La **configuration de la base de données PostgreSQL (Supabase)**
-- Les **scripts d’initialisation**
-- Le **Dockerfile** pour le déploiement de l’API (en attente)
+## 📋 Rôle du microservice
 
-L’objectif de ce dépôt est d’offrir une base solide et évolutive avant le passage vers une **architecture orientée services (AOS)**.
+Le service fournit :
+
+* Monitoring des statistiques utilisateurs (connexions, activités)
+* Gestion des événements de connexion et logs
+* Suivi des activités de révision (reviews)
+* Métriques d'utilisation globales du système
+* API REST pour les opérations administratives
+* Communication inter-services avec user-service et review-service
 
 ---
-## �️ Admin service (microservice)
 
-Ce dépôt contient désormais une structure permettant d'extraire un microservice dédié **admin**. Les points clés :
+## 🏗️ Structure du projet
 
-- Entrypoint : `com.littlebook.admin.AdminApplication` (scan limité au package `com.littlebook.admin`).
-- Port par défaut : `8081` (fichier `src/main/resources/application.yml`).
-- Endpoints d'exemple : `/admin/health`, `/admin/ping`.
-- Le code existant (controllers pour Book/Review/Subscription/User) reste présent pour archivage mais n'est plus scanné par l'application admin (pour éviter les conflits lors du démarrage).
+```
+src/main/java/com/littlebook/admin
+ ├── AdminApplication.java              → Entrypoint Spring Boot
+ ├── config/
+ │   ├── OpenApiConfig.java            → Configuration Swagger/OpenAPI
+ │   ├── RestTemplateConfig.java       → Configuration HTTP pour inter-services
+ │   └── SecurityConfig.java           → Configuration de sécurité
+ ├── controller/
+ │   ├── AdminController.java          → Endpoints administratifs
+ │   ├── HealthController.java         → Health checks
+ │   └── StatsController.java          → Endpoints statistiques
+ ├── service/
+ │   ├── AdminService.java             → Logique métier administrative
+ │   ├── StatsService.java             → Calcul des statistiques
+ │   └── UserClient.java               → Client HTTP pour user-service
+ ├── dto/
+ │   ├── AdminUserDto.java             → DTO Utilisateur
+ │   ├── LoginRecordRequest.java       → DTO pour enregistrer une connexion
+ │   ├── SetLastLoginRequest.java      → DTO pour mise à jour connexion
+ │   ├── SetTotalLoginsRequest.java    → DTO pour mise à jour compteur
+ │   └── (autres DTOs métier)
+ ├── entity/
+ │   ├── LoginEvent.java               → Entité événements de connexion
+ │   ├── ReviewActivity.java           → Entité activités de révision
+ │   └── UserLoginStats.java           → Entité statistiques utilisateur
+ ├── repository/
+ │   ├── AdminRepository.java          → Repository administration
+ │   ├── LoginEventRepository.java     → Repository événements
+ │   ├── ReviewActivityRepository.java → Repository activités révision
+ │   └── UserLoginStatsRepository.java → Repository stats
+ └── exception/
+     └── (Gestion des erreurs)
 
-Pour démarrer uniquement le microservice admin en local :
+src/main/resources/application.yml      → Configuration
+Dockerfile                               → Build Docker
+```
+
+---
+
+## 🚀 Principales caractéristiques
+
+* **Entrypoint** : `com.littlebook.admin.AdminApplication`
+* **Port par défaut** : `8085`
+* **API** : `/admin/*` et `/stats/*`
+* **Base de données** : H2 en mémoire pour développement
+* **Inter-services** : Communication avec user-service et review-service
+* **Monitoring** : H2 Console disponible à `/h2-console`
+
+---
+
+## 🔗 Endpoints principaux
+
+### Santé & Diagnostics
+* `GET /admin/health` — health check du service
+* `GET /health` — endpoint de base pour les health checks
+
+### Gestion Utilisateurs Administratifs
+* `POST /admin/users` — créer un utilisateur administratif
+* `GET /admin/users/{id}` — récupérer un utilisateur
+* `GET /admin/users` — lister tous les utilisateurs
+* `PUT /admin/users/{id}` — mettre à jour un utilisateur
+* `DELETE /admin/users/{id}` — supprimer un utilisateur
+
+### Événements de Connexion
+* `POST /admin/login-events` — enregistrer un événement de connexion
+* `GET /admin/login-events` — récupérer l'historique des connexions
+* `GET /admin/login-events/{userId}` — connexions d'un utilisateur spécifique
+
+### Statistiques d'Utilisation
+* `GET /stats/login-stats` — statistiques globales de connexion
+* `GET /stats/user-login-stats/{userId}` — stats d'un utilisateur
+* `GET /stats/review-activity` — activité des reviews
+* `GET /stats/dashboard` — dashboard global
+
+---
+
+## 🛠️ Prérequis
+
+* Java 17+
+* Maven 3.8+
+* Docker (optionnel)
+* Accès réseau pour la communication inter-services
+
+---
+
+## 🔌 Communication Inter-Services
+
+### User-Service Client
+* **Classe** : `com.littlebook.admin.service.UserClient`
+* **Endpoint base** : Configuré dans `application.yml`
+* **Opérations** :
+  - Récupération de profils utilisateurs
+  - Synchronisation des données de connexion
+  - Mise à jour des statistiques utilisateur
+* **RestTemplate** : Configuré dans `RestTemplateConfig.java`
+
+### Intégrations
+- **user-service** : Récupération et mise à jour des données utilisateur
+- **review-service** : Collecte des activités de révision
+- **book-service** : Référence pour les statistiques (optionnel)
+
+---
+
+## 💻 Développement — démarrer localement
+
+1. Build :
+
+```powershell
+cd admin-service
+mvn -DskipTests clean package
+```
+
+2. Run via Maven :
+
+```powershell
+mvn spring-boot:run
+```
+
+3. Ou exécuter le jar :
+
+```powershell
+java -jar target/littlebook-back-0.0.1-SNAPSHOT.jar
+```
+
+Le service démarre sur `http://localhost:8085`
+
+Tests rapides :
+
+```powershell
+curl.exe -X GET "http://localhost:8085/admin/health"
+curl.exe -X GET "http://localhost:8085/admin/users"
+curl.exe -X GET "http://localhost:8085/stats/dashboard"
+```
+
+Accès H2 Console :
+
+```
+http://localhost:8085/h2-console
+URL: jdbc:h2:mem:admindb
+Driver: org.h2.Driver
+```
+
+---
+
+## 🐳 Docker
+
+Build :
+
+```powershell
+docker build -t littlebook-admin:local admin-service/
+```
+
+Run via Docker Compose :
+
+```powershell
+docker-compose up -d admin-service
+```
+
+Le service écoute sur le port `8085`
+
+---
+
+## 🗄️ Base de données
+
+* **Type** : H2 en mémoire pour le développement
+* **Configuration** : `src/main/resources/application.yml`
+* **URL** : `jdbc:h2:mem:admindb`
+* **Console** : Disponible à `http://localhost:8085/h2-console`
+* **DDL** : Hibernate `ddl-auto: update` (crée les tables automatiquement)
+
+### Entités principales
+- **LoginEvent** : Historique des connexions utilisateur
+- **ReviewActivity** : Activités de révision/review
+- **UserLoginStats** : Statistiques agrégées par utilisateur
+
+---
+
+## 🧪 Tests
+
+Lancer les tests :
 
 ```bash
- # admin-service — microservice Admin
-
- Ce dossier contient le microservice "admin" extrait du backend LittleBook.
- Il s'agit d'un petit service Spring Boot destiné à exposer des opérations d'administration (monitoring, gestion des utilisateurs/rôles, audits).
-
- Principales caractéristiques
- - Entrypoint : `com.littlebook.admin.AdminApplication`
- - Port par défaut : 8081
- - Endpoints d'exemple : `/admin/health`, `/admin/ping`
-
- Important : ce README couvre uniquement le microservice `admin-service`. Les sources plus larges du backend (monolithe) ont été archivées ou déplacées — voir `archived/` si présent.
-
- ## Structure du projet
-
- - `src/main/java/com/littlebook/admin` : code spécifique au microservice (controller, service, repository, config, dto)
- - `src/main/resources/application.yml` : configuration locale (H2 par défaut)
- - `Dockerfile` : build/run en image
- - `scripts/` : scripts d'aide (archive, cleanup)
-
- ## Prérequis
-
- - Java 17+ (ou Java 21 présent sur la machine de build)
- - Maven 3.8+
- - Docker (optionnel)
-
- ## Variables d'environnement utiles
-
- - `FIREBASE_PROJECT_ID` — identifiant Firebase (si utilisé)
- - `FIREBASE_CREDENTIALS` — chemin absolu vers la clé de service Firebase (JSON)
- - Pour override de la DB en production (exemple) :
-   - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
-
- Ne placez jamais de mots de passe en clair dans le repo. Utilisez des variables d'environnement ou un coffre (Vault / GitHub Secrets).
-
- ## Développement — lancer localement
-
- 1) Compiler le projet (rapide, tests sautés) :
-
- ```bash
- cd /Users/justinekosinski/Desktop/ledoux/LittleBook_Back/admin-service
- mvn -DskipTests clean package
- ```
-
- 2) Lancer avec Maven (utilise l'entrypoint admin) :
-
- ```bash
- mvn -DskipTests -Dspring-boot.run.main-class=com.littlebook.admin.AdminApplication spring-boot:run
- ```
-
- ou lancer le jar produit :
-
- ```bash
- java -jar target/littlebook-back-0.0.1-SNAPSHOT.jar
- ```
-
- Test rapide des endpoints :
-
- ```bash
- curl -sS http://localhost:8081/admin/health
- curl -sS http://localhost:8081/admin/ping
- ```
-
-Endpoints d'administration / statistiques (exemples) :
-
-```bash
-# Liste des stats utilisateur (stockées localement dans admin DB)
-curl -sS http://localhost:8081/api/stats/users
-
-# Liste enrichie : jointure dynamique avec user-service (email, name, roles...)
-curl -sS http://localhost:8081/api/stats/users/enriched
-
-# Evénements de login
-curl -sS http://localhost:8081/api/stats/login-events
-
-# Résumé global
-curl -sS http://localhost:8081/api/stats/summary
+mvn test
 ```
 
- Si vous utilisez un port autre que 8081, passez l'argument `--server.port=XXXX` à la JVM ou à `spring-boot:run`.
+Ajouter selon besoin :
 
- ## Docker
+* tests unitaires (services, mapping DTO)
+* tests d’intégration (WebTestClient / MockMvc)
+* tests sur l’intégration OpenLibrary (mock de l’API)
 
- Build et run :
+---
 
- ```bash
- # depuis le dossier admin-service
- docker build -t littlebook-admin:local .
- docker run -p 8081:8081 littlebook-admin:local
- ```
+## 🔐 Sécurité
 
- ## Base de données et scripts SQL
+Configuration basique pour le développement. Avant production :
 
- Par défaut, `application.yml` configure une base H2 en mémoire pour le développement local.
- Le projet contient des scripts SQL orientés PostgreSQL (ex. `schema.sql`) — ces scripts ne doivent pas être exécutés automatiquement contre H2. Le démarrage local est configuré pour ignorer l'init SQL.
+* Ajouter authentification (JWT / Firebase / OAuth2)
+* Restreindre les endpoints aux administrateurs
+* Valider les appels inter-services (HTTPS, mTLS)
+* Audit trail complet des opérations sensibles
 
- En production, activez un profil (ex. `prod`) avec une datasource PostgreSQL et utilisez Flyway ou Liquibase pour l'initialisation/les migrations.
+---
 
- ## Tests
+## 📄 Swagger / OpenAPI
 
- Exécuter les tests :
-
- ```bash
- mvn test
- ```
-
- Ajoutez des tests unitaires et d'intégration dans `src/test` pour couvrir le contrôleur admin et la logique métier.
-
- ## Sécurité
-
- Actuellement la configuration de sécurité est minimale (dev). Avant production, mettez en place :
-
- - authentification (JWT / Firebase / OAuth2)
- - configuration des rôles et permissions pour les endpoints d'administration
-
- ## Bonnes pratiques & next steps
-
- - Ne laissez aucune credential sensible commitée. Migrer les secrets vers un vault.
- - Déplacer la gestion des schémas DB vers Flyway/Liquibase et activer par profil.
- - Ajouter une pipeline CI qui build, teste et publie l'image Docker.
- - Ajouter des metrics/opentelemetry et des endpoints d'audit pour l'administration.
-
-## Swagger / OpenAPI
-
-L'UI Swagger est exposée via springdoc. Après démarrage du service, ouvrez :
+Disponible via springdoc :
 
 ```
-http://localhost:8081/swagger-ui.html
+http://localhost:8085/swagger-ui.html
 ```
 
-Vous y verrez la documentation interactive des endpoints exposés (ex: `/api/stats/*`).
+La documentation interactive affiche tous les endpoints avec les modèles de données.
 
- ## Contact / Contributeurs
+---
 
- Voir la racine du monorepo pour la liste complète des contributeurs.
+## 📌 Fonctionnalités implémentées
 
- ---
- Petit résumé : ce README vous permet de démarrer rapidement le microservice admin en local, de comprendre la configuration par défaut et les étapes à suivre pour rendre le service prêt pour la production.
+- ✅ **CRUD Utilisateurs Admin** : Création, lecture, mise à jour, suppression
+- ✅ **Enregistrement Événements** : Logging des connexions utilisateur
+- ✅ **Statistiques Utilisateur** : Agrégation des connexions par utilisateur
+- ✅ **Suivi Activités** : Enregistrement des activités de review
+- ✅ **Dashboard Global** : Vue synthétique des statistiques d'utilisation
+- ✅ **H2 en mémoire** : Démarrage rapide en développement
+- ✅ **Inter-services** : Communication avec user-service via RestTemplate
+- ✅ **Pagination** : Support sur tous les endpoints liste
+- ✅ **Gestion d'erreurs** : Réponses standardisées
+- ✅ **Health Checks** : Endpoints dédiés pour la surveillance
+
+## 🔮 Perspectives futures
+
+### Court terme (1-2 mois)
+1. **JWT Authentication** — Sécuriser l'accès aux endpoints administratifs
+2. **Audit Logging** — Tracer toutes les modifications administratives
+3. **Tests unitaires** — Coverage > 80% avec JUnit5 + Mockito
+4. **Real-time Alerts** — Notifications sur seuils critiques atteints
+
+### Moyen terme (3-6 mois)
+1. **PostgreSQL** — Migration vers PostgreSQL en production
+2. **Elasticsearch** — Indexation des logs pour recherches rapides
+3. **Grafana Dashboards** — Visualisation avancée des métriques
+4. **Prometheus Metrics** — Exposition des métriques système
+5. **WebSocket Notifications** — Alertes temps réel aux administrateurs
+
+### Long terme (6-12 mois)
+1. **Machine Learning** — Détection d'anomalies d'usage
+2. **Report Generation** — Génération de rapports PDF/Excel
+3. **Role-Based Access Control** — Niveaux de permission granulaires
+4. **Audit Trail Immutable** — Tamper-proof logging
+5. **Integration Analytics** — Intégration avec Google Analytics / Mixpanel
