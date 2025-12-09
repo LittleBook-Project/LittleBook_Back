@@ -17,13 +17,13 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: create
     show-sql: true
 
   # Force SQL initialization from schema.sql / data.sql for the in-memory test DB
   sql:
     init:
-      mode: always
+      mode: never
 
   # Defer datasource initialization until after Hibernate (not needed when ddl-auto=none)
   # spring.jpa.defer-datasource-initialization: true
