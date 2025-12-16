@@ -1,149 +1,260 @@
-# LittleBook_Back
-# 📘 Backend – Spring Boot 3 + Java 17 + SQL + Firebase
-
-LittleBook est une application de type réseau social visant à permettre aux utilisateurs de partager du contenu, de suivre d'autres membres et d'interagir à travers des publications et commentaires.  
-Ce dépôt correspond à la partie **back-end**, développée avec **Spring Boot**, assurant la gestion des utilisateurs, des rôles et des futures entités (posts, relations, etc.). Ce back sera en communication avec une partie **front-end** réalisé en parallèle avec **React**
+Voici un **README dédié au microservice `book-service`**, cohérent avec le style et le niveau de détail du README admin, et adapté à votre découpage microservices + usages OpenLibrary.
 
 ---
-## 👥 Équipe de développement
 
-- **[AlyneLDC](https://github.com/alyneldc)** — Gestion de projet / Responsable backend / documentation
-- **[MathBruu](https://github.com/mathbruu)** — Responsable frontend / intégration / documentation
-- **[MouniaT](https://github.com/MOUNIAT-1002)** — Responsable backend / conception / intégration / documentation
-- **[ThomasKsk](https://github.com/ThomasKsk)** — Base de données / documentation
+# book-service — Microservice Books
 
----
-## 📂 Sommaire
+Ce dossier contient le microservice **book-service**, chargé de la gestion des livres au sein de LittleBook.
+Il expose des opérations permettant de **créer**, **récupérer**, **chercher** et **enrichir** des livres, notamment grâce à des appels externes vers **OpenLibrary**.
 
-Ce dépôt contient :
-- Le **code source du back-end en Java - Spring Boot**
-- La **configuration de la base de données PostgreSQL (Supabase)**
-- Les **scripts d’initialisation**
-- Le **Dockerfile** pour le déploiement de l’API (en attente)
-
-L’objectif de ce dépôt est d’offrir une base solide et évolutive avant le passage vers une **architecture orientée services (AOS)**.
+Ce README couvre uniquement le périmètre du microservice `book-service`.
 
 ---
-## �️ Admin service (microservice)
 
-Ce dépôt contient désormais une structure permettant d'extraire un microservice dédié **admin**. Les points clés :
+## 📘 Rôle du microservice
 
-- Entrypoint : `com.littlebook.admin.AdminApplication` (scan limité au package `com.littlebook.admin`).
-- Port par défaut : `8081` (fichier `src/main/resources/application.yml`).
-- Endpoints d'exemple : `/admin/health`, `/admin/ping`.
-- Le code existant (controllers pour Book/Review/Subscription/User) reste présent pour archivage mais n'est plus scanné par l'application admin (pour éviter les conflits lors du démarrage).
+Le service fournit :
 
-Pour démarrer uniquement le microservice admin en local :
+* Création et récupération des entités Livre (DB locale ou cache)
+* Recherche de livres par titre, auteur ou ISBN
+* Enrichissement depuis **OpenLibrary API** (couverture, résumé, métadonnées)
+* Normalisation des données entrantes / sortantes
+* API REST exposée au front-end et aux autres microservices (ex : review-service)
+
+---
+
+## 🏗️ Structure du projet
+
+```
+src/main/java/com/littlebook/book
+ ├── BookApplication.java        → Entrypoint Spring Boot
+ ├── config/
+ │   ├── OpenApiConfig.java      → Configuration Swagger/OpenAPI
+ │   └── SecurityConfig.java     → Configuration de sécurité
+ ├── controller/
+ │   └── BookController.java     → Endpoints REST
+ ├── service/
+ │   ├── BookService.java        → Logique métier (CRUD)
+ │   ├── BookSyncService.java    → Synchronisation OpenLibrary
+ │   └── external/
+ │       └── OpenLibraryClient.java  → Client HTTP pour OpenLibrary
+ ├── dto/
+ │   ├── BookRequest.java        → DTO pour créer/modifier
+ │   ├── BookResponse.java       → DTO pour les réponses
+ │   └── openlibrary/            → DTOs OpenLibrary
+ ├── entity/
+ │   └── BookEntity.java         → Entité JPA
+ ├── repository/
+ │   └── BookRepository.java     → Accès à la DB
+ └── exception/
+     ├── BookNotFoundException.java
+     ├── OpenLibraryException.java
+     ├── GlobalExceptionHandler.java
+     └── ErrorResponse.java
+
+src/main/resources/application.yml      → Configuration
+Dockerfile                               → Build Docker
+```
+
+---
+
+## 🚀 Principales caractéristiques
+
+* **Entrypoint** : `com.littlebook.book.BookApplication`
+* **Port par défaut** : `8084`
+* **API** : `/books/*`
+* **Client HTTP** pour OpenLibrary (RestClient Spring 6 natif)
+* **DB** : H2 en mémoire pour développement
+* **Synchronisation** : Intégration complète avec OpenLibrary API
+
+---
+
+## 🔗 Endpoints principaux
+
+### Santé & Diagnostics
+* `GET /books/health` — health check du service
+* `GET /books/ping` — ping simple
+
+### CRUD Livres
+* `POST /books` — créer un livre
+* `GET /books/{id}` — récupérer un livre par UUID
+* `GET /books` — lister tous les livres (paginé, `?page=0&size=20`)
+* `PATCH /books/{id}` — mettre à jour un livre
+* `DELETE /books/{id}` — supprimer un livre
+
+### Recherche & Synchronisation OpenLibrary
+* `GET /books/search?title=...&author=...` — recherche OpenLibrary + synchronisation locale
+* `POST /books/sync/{isbn}` — synchroniser un livre spécifique par ISBN
+* `GET /books/by-isbn13?isbn13=...` — rechercher un livre local par ISBN-13
+
+---
+
+## 🛠️ Prérequis
+
+* Java 17+
+* Maven 3.8+
+* Docker (optionnel)
+* Accès réseau pour les appels OpenLibrary
+
+---
+
+## 🌐 OpenLibrary Integration
+
+Le **book-service** intègre complètement l'API OpenLibrary pour enrichir le catalogue :
+
+### Client OpenLibrary
+* **Classe** : `com.littlebook.book.service.external.OpenLibraryClient`
+* **Endpoint** : `https://openlibrary.org/search.json`
+* **Paramètres supportés** : `title`, `author`, `isbn`
+* **Encoding** : URLEncoder avec UTF-8 (gestion des caractères spéciaux)
+* **Timeout** : 5 secondes
+* **Configuration** : `openlibrary.api.base-url` dans `application.yml`
+
+### Service de Synchronisation
+* **Classe** : `com.littlebook.book.service.BookSyncService`
+* Recherche sur OpenLibrary et synchronise les résultats localement
+* Détecte les doublons par ISBN-13 ou OpenLibrary ID
+* Enrichit les entités avec métadonnées (année, couverture, description)
+
+### Exemple de flux
+1. Client appelle `GET /books/search?title=Harry`
+2. OpenLibraryClient requête `https://openlibrary.org/search.json?title=Harry`
+3. BookSyncService récupère les résultats et crée les entités locales
+4. Les doublons (même OpenLibrary ID) ne sont pas créés deux fois
+
+---
+
+## 💻 Développement — démarrer localement
+
+1. Build :
+
+```powershell
+cd book-service
+mvn -DskipTests clean package
+```
+
+2. Run via Maven :
+
+```powershell
+mvn spring-boot:run
+```
+
+3. Ou exécuter le jar :
+
+```powershell
+java -jar target/littlebook-back-0.0.1-SNAPSHOT.jar
+```
+
+Le service démarre sur `http://localhost:8084`
+
+Tests rapides :
+
+```powershell
+curl.exe -X GET "http://localhost:8084/books/ping"
+curl.exe -X GET "http://localhost:8084/books?size=20"
+curl.exe -X GET "http://localhost:8084/books/search?title=Harry"
+curl.exe -X POST "http://localhost:8084/books/sync/9780439708180"
+```
+
+---
+
+## 🐳 Docker
+
+Build :
+
+```powershell
+docker build -t littlebook-book:local book-service/
+```
+
+Run via Docker Compose :
+
+```powershell
+docker-compose up -d book-service
+```
+
+Le service écoute sur le port `8084`
+
+---
+
+## 🗄️ Base de données
+
+* **Type** : H2 en mémoire pour le développement
+* **Configuration** : `src/main/resources/application.yml`
+* **URL** : `jdbc:h2:mem:bookdb`
+* **DDL** : Hibernate `ddl-auto: update` (crée les tables automatiquement)
+
+Aucun script SQL PostgreSQL n'est appliqué. Les migrations vers PostgreSQL en production seront à gérer séparément.
+
+---
+
+## 🧪 Tests
+
+Lancer les tests :
 
 ```bash
- # admin-service — microservice Admin
+mvn test
+```
 
- Ce dossier contient le microservice "admin" extrait du backend LittleBook.
- Il s'agit d'un petit service Spring Boot destiné à exposer des opérations d'administration (monitoring, gestion des utilisateurs/rôles, audits).
+Ajouter selon besoin :
 
- Principales caractéristiques
- - Entrypoint : `com.littlebook.admin.AdminApplication`
- - Port par défaut : 8081
- - Endpoints d'exemple : `/admin/health`, `/admin/ping`
+* tests unitaires (services, mapping DTO)
+* tests d’intégration (WebTestClient / MockMvc)
+* tests sur l’intégration OpenLibrary (mock de l’API)
 
- Important : ce README couvre uniquement le microservice `admin-service`. Les sources plus larges du backend (monolithe) ont été archivées ou déplacées — voir `archived/` si présent.
+---
 
- ## Structure du projet
+## 🔐 Sécurité
 
- - `src/main/java/com/littlebook/admin` : code spécifique au microservice (controller, service, repository, config, dto)
- - `src/main/resources/application.yml` : configuration locale (H2 par défaut)
- - `Dockerfile` : build/run en image
- - `scripts/` : scripts d'aide (archive, cleanup)
+Configuration basique pour le développement. Avant production :
 
- ## Prérequis
+* Ajouter authentification (JWT / Firebase / OAuth2 selon architecture globale)
+* Restreindre les endpoints si nécessaire
 
- - Java 17+ (ou Java 21 présent sur la machine de build)
- - Maven 3.8+
- - Docker (optionnel)
+---
 
- ## Variables d'environnement utiles
+## 📄 Swagger / OpenAPI
 
- - `FIREBASE_PROJECT_ID` — identifiant Firebase (si utilisé)
- - `FIREBASE_CREDENTIALS` — chemin absolu vers la clé de service Firebase (JSON)
- - Pour override de la DB en production (exemple) :
-   - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+Disponible via springdoc :
 
- Ne placez jamais de mots de passe en clair dans le repo. Utilisez des variables d'environnement ou un coffre (Vault / GitHub Secrets).
+```
+http://localhost:8084/swagger-ui.html
+```
 
- ## Développement — lancer localement
+La documentation interactive affiche tous les endpoints avec les modèles de données.
 
- 1) Compiler le projet (rapide, tests sautés) :
+---
 
- ```bash
- cd /Users/justinekosinski/Desktop/ledoux/LittleBook_Back/admin-service
- mvn -DskipTests clean package
- ```
+## 📌 Fonctionnalités implémentées
 
- 2) Lancer avec Maven (utilise l'entrypoint admin) :
+- ✅ **CRUD complet** : Create, Read, Update, Delete avec validation
+- ✅ **Recherche OpenLibrary** : Par titre, auteur, ISBN avec synchronisation
+- ✅ **Pagination & tri** : Support `page`, `size`, `sort` sur tous les endpoints liste
+- ✅ **Gestion d'erreurs** : GlobalExceptionHandler avec réponses standardisées
+- ✅ **Validation** : Jakarta Validation annotations sur les DTOs
+- ✅ **H2 en mémoire** : Démarrage rapide en développement
+- ✅ **RestClient Spring 6** : Client HTTP moderne et natif
+- ✅ **Logging** : SLF4J avec messages structurés
+- ✅ **Détection des doublons** : Vérification par ISBN-13 et OpenLibrary ID
+- ✅ **URL Encoding** : Gestion correcte des caractères spéciaux (accents, espaces)
 
- ```bash
- mvn -DskipTests -Dspring-boot.run.main-class=com.littlebook.admin.AdminApplication spring-boot:run
- ```
+## 🔮 Perspectives futures
 
- ou lancer le jar produit :
+### Court terme (1-2 mois)
+1. **JWT Authentication** — Protéger les endpoints d'écriture avec tokens
+2. **Tests unitaires** — Coverage > 80% avec JUnit5 + Mockito
+3. **Communication inter-services** — Review-Service appellera pour vérifier les livres
+4. **Redis Caching** — Cache des recherches OpenLibrary fréquentes
 
- ```bash
- java -jar target/littlebook-back-0.0.1-SNAPSHOT.jar
- ```
+### Moyen terme (3-6 mois)
+1. **PostgreSQL** — Migration vers PostgreSQL en production
+2. **Elasticsearch** — Indexation pour recherches ultra-rapides
+3. **GraphQL API** — Alternative à REST pour requêtes complexes
+4. **Rate Limiting** — Protection contre abus de l'API OpenLibrary
+5. **Webhooks** — Notifications sur ajout/modification de livres
 
- Test rapide des endpoints :
-
- ```bash
- curl -sS http://localhost:8081/admin/health
- curl -sS http://localhost:8081/admin/ping
- ```
-
- Si vous utilisez un port autre que 8081, passez l'argument `--server.port=XXXX` à la JVM ou à `spring-boot:run`.
-
- ## Docker
-
- Build et run :
-
- ```bash
- # depuis le dossier admin-service
- docker build -t littlebook-admin:local .
- docker run -p 8081:8081 littlebook-admin:local
- ```
-
- ## Base de données et scripts SQL
-
- Par défaut, `application.yml` configure une base H2 en mémoire pour le développement local.
- Le projet contient des scripts SQL orientés PostgreSQL (ex. `schema.sql`) — ces scripts ne doivent pas être exécutés automatiquement contre H2. Le démarrage local est configuré pour ignorer l'init SQL.
-
- En production, activez un profil (ex. `prod`) avec une datasource PostgreSQL et utilisez Flyway ou Liquibase pour l'initialisation/les migrations.
-
- ## Tests
-
- Exécuter les tests :
-
- ```bash
- mvn test
- ```
-
- Ajoutez des tests unitaires et d'intégration dans `src/test` pour couvrir le contrôleur admin et la logique métier.
-
- ## Sécurité
-
- Actuellement la configuration de sécurité est minimale (dev). Avant production, mettez en place :
-
- - authentification (JWT / Firebase / OAuth2)
- - configuration des rôles et permissions pour les endpoints d'administration
-
- ## Bonnes pratiques & next steps
-
- - Ne laissez aucune credential sensible commitée. Migrer les secrets vers un vault.
- - Déplacer la gestion des schémas DB vers Flyway/Liquibase et activer par profil.
- - Ajouter une pipeline CI qui build, teste et publie l'image Docker.
- - Ajouter des metrics/opentelemetry et des endpoints d'audit pour l'administration.
-
- ## Contact / Contributeurs
-
- Voir la racine du monorepo pour la liste complète des contributeurs.
-
- ---
- Petit résumé : ce README vous permet de démarrer rapidement le microservice admin en local, de comprendre la configuration par défaut et les étapes à suivre pour rendre le service prêt pour la production.
+### Long terme (6-12 mois)
+1. **Machine Learning** — Recommandations basées l'historique utilisateur
+2. **Audit Trail** — Historique complet des modifications
+3. **Data Enrichment** — Intégration Google Books, Amazon API
+4. **Synchronisation temps réel** — WebSocket pour mises à jour live
+5. **Multi-sources** — Support de plusieurs catalogues de livres
