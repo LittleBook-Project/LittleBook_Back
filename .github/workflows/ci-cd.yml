@@ -192,7 +192,7 @@ jobs:
     steps:
       - name: Check build status
         run: |
-          if [ "${{ needs.quality-checks.result }}" != "success" ] || [ "${{ needs.build-and-push.result }}" != "success" ]; then
+          if [ "${{ needs.quality-checks.result }}" != "success" ] || ([ "${{ needs.build-and-push.result }}" != "success" ] && [ "${{ needs.build-and-push.result }}" != "skipped" ]); then
             echo "❌ Pipeline failed"
             exit 1
           else
