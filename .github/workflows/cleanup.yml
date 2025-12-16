@@ -1,0 +1,57 @@
+name: Cleanup Old Artifacts
+
+on:
+  schedule:
+    # Chaque semaine le lundi à 2h du matin
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    
+    strategy:
+      matrix:
+        service:
+          - admin-service
+          - auth-service
+          - user-service
+          - review-service
+          - book-service
+    
+    steps:
+      - name: Delete untagged images
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const packageName = 'littlebook-${{ matrix.service }}';
+            const owner = context.repo.owner;
+            
+            // Get all package versions
+            const versions = await github.rest.packages.getAllPackageVersions({
+              package_type: 'container',
+              package_name: packageName,
+              username: owner
+            });
+            
+            // Delete versions older than 30 days that are untagged
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            
+            for (const version of versions.data) {
+              const createdAt = new Date(version.created_at);
+              if (createdAt < thirtyDaysAgo && !version.name.includes('-')) {
+                console.log(`Deleting version ${version.id} (${version.name})`);
+                await github.rest.packages.deletePackageVersion({
+                  package_type: 'container',
+                  package_name: packageName,
+                  username: owner,
+                  package_version_id: version.id
+                });
+              }
+            }
