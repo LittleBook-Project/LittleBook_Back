@@ -2,11 +2,15 @@ package com.littlebook.user;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.context.SpringBootTest;
 
-
-
-
+@SpringBootTest
 class UserApplicationTest {
+
+    @Test
+    void contextLoads() {
+        // Verifies that the Spring application context loads successfully
+    }
 
     @Test
     void annotatedWithSpringBootApplication() {
