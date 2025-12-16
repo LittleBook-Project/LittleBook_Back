@@ -2,7 +2,7 @@ package com.littlebook.review.dto;
 
 import java.time.LocalDate;
 
-public class ReviewDTO {
+public class ReviewRequest {
     private Long id;
     private String description;
     private LocalDate reviewCreationDate;
