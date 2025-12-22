@@ -56,7 +56,7 @@ jobs:
       - name: Run unit tests
         run: |
           cd ${{ matrix.service }}
-          mvn test -q --no-fail-at-end
+          mvn test -q
         continue-on-error: true
 
       - name: Generate test report
