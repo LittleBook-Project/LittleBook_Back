@@ -33,14 +33,21 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(OpenLibraryException.class)
     public ResponseEntity<ErrorResponse> handleOpenLibraryError(OpenLibraryException ex, WebRequest request) {
+        // Si le livre n'est pas trouvé, retourner 404 (Not Found)
+        // Si c'est une erreur d'API, retourner 502 (Bad Gateway)
+        HttpStatus status = ex.getMessage().contains("Aucun livre trouvé") || 
+                           ex.getMessage().contains("not found") 
+                           ? HttpStatus.NOT_FOUND 
+                           : HttpStatus.BAD_GATEWAY;
+        
         ErrorResponse error = new ErrorResponse(
             LocalDateTime.now(),
-            HttpStatus.SERVICE_UNAVAILABLE.value(),
-            "Service Unavailable",
+            status.value(),
+            status.getReasonPhrase(),
             ex.getMessage(),
             request.getDescription(false).replace("uri=", "")
         );
-        return new ResponseEntity<>(error, HttpStatus.SERVICE_UNAVAILABLE);
+        return new ResponseEntity<>(error, status);
     }
     
     /**

@@ -35,6 +35,10 @@ public class ReviewService {
         return repo.findByBookIsbn(bookIsbn);
     }
 
+    public List<ReviewEntity> getByBookId(String bookId) {
+        return repo.findByBookId(bookId);
+    }
+
     public List<ReviewEntity> getByUserUuid(String userUuid) {
         return repo.findByUserUuid(userUuid);
     }
@@ -43,8 +47,16 @@ public class ReviewService {
         return repo.getAverageRatingByBookIsbn(bookIsbn);
     }
 
+    public Double getAverageRatingByBookId(String bookId) {
+        return repo.getAverageRatingByBookId(bookId);
+    }
+
     public Long getReviewCount(String bookIsbn) {
         return repo.countByBookIsbn(bookIsbn);
+    }
+
+    public Long getReviewCountByBookId(String bookId) {
+        return repo.countByBookId(bookId);
     }
 
     // --------- CREATE ---------

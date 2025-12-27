@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/review")
+@RequestMapping("/api/review")
 public class ReviewController {
 
     private final ReviewService service;
@@ -93,6 +93,14 @@ public class ReviewController {
                 .toList();
     }
 
+    @GetMapping("/book-id/{bookId}")
+    public List<ReviewResponse> getByBookId(@PathVariable String bookId) {
+        return service.getByBookId(bookId)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     @GetMapping("/user/{userUuid}")
     public List<ReviewResponse> getByUser(@PathVariable String userUuid) {
         return service.getByUserUuid(userUuid)
@@ -119,6 +127,24 @@ public class ReviewController {
         return ResponseEntity.ok(count);
     }
 
+    @GetMapping("/book-id/{bookId}/average-rating")
+    public ResponseEntity<Double> getAverageRatingByBookId(@PathVariable String bookId) {
+        Double avg = service.getAverageRatingByBookId(bookId);
+        if (avg == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(avg);
+    }
+
+    @GetMapping("/book-id/{bookId}/count")
+    public ResponseEntity<Long> getReviewCountByBookId(@PathVariable String bookId) {
+        Long count = service.getReviewCountByBookId(bookId);
+        if (count == null || count == 0) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(count);
+    }
+
     // --- Mapping helpers ---
 
     private ReviewEntity mapToEntity(ReviewRequest r) {
@@ -128,6 +154,7 @@ public class ReviewController {
         e.setRating(r.getRating());
         e.setUserUuid(r.getUserUuid());
         e.setBookIsbn(r.getBookIsbn());
+        e.setBookId(r.getBookId());
         return e;
     }
 
@@ -138,7 +165,8 @@ public class ReviewController {
                 e.getReviewCreationDate(),
                 e.getRating(),
                 e.getUserUuid(),
-                e.getBookIsbn()
+                e.getBookIsbn(),
+                e.getBookId()
         );
     }
 }

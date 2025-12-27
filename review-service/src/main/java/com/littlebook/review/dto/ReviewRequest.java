@@ -9,6 +9,7 @@ public class ReviewRequest {
     private Integer rating;
     private String userUuid;
     private String bookIsbn;
+    private String bookId;
 
     // Getters & Setters
     public Long getId() { return id; }
@@ -28,4 +29,7 @@ public class ReviewRequest {
 
     public String getBookIsbn() { return bookIsbn; }
     public void setBookIsbn(String bookIsbn) { this.bookIsbn = bookIsbn; }
+
+    public String getBookId() { return bookId; }
+    public void setBookId(String bookId) { this.bookId = bookId; }
 }

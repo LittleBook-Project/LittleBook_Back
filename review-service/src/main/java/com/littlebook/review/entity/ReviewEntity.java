@@ -30,6 +30,9 @@ public class ReviewEntity {
     @Column(name = "book_isbn")
     private String bookIsbn;
 
+    @Column(name = "book_id")
+    private String bookId;
+
     // Getters / setters
 
     public Long getId() { return id; }
@@ -55,4 +58,8 @@ public class ReviewEntity {
     public String getBookIsbn() { return bookIsbn; }
 
     public void setBookIsbn(String bookIsbn) { this.bookIsbn = bookIsbn; }
+
+    public String getBookId() { return bookId; }
+
+    public void setBookId(String bookId) { this.bookId = bookId; }
 }
