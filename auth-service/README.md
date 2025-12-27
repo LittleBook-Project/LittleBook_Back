@@ -1,82 +1,63 @@
-# Auth Service — LittleBook
+﻿# auth-service  Microservice Authentication
 
-Service d'authentification indépendant (SOA) pour LittleBook.
+Ce dossier contient le microservice **auth-service**, chargé de l'authentification stateless pour LittleBook.
+Il valide les **ID tokens Firebase** (Google / Microsoft) et expose des endpoints REST minimalistes pour vérifier la disponibilité et récupérer le profil courant.
 
-Ce README décrit le service, son architecture, son déploiement local/production, les endpoints exposés, la sécurité, les tests et les recommandations opérationnelles.
+Ce README couvre uniquement le périmètre du microservice `auth-service`.
 
 ---
 
-## 1. Présentation
+##  Rôle du microservice
 
-- Rôle : service autonome de validation d'ID tokens Firebase. Il fournit des endpoints REST permettant aux frontends de vérifier l'identité d'un utilisateur et d'obtenir des informations de profil.
-- Contexte technologique : Java 17, Spring Boot 3.3.x, Spring Security 6, Firebase Admin SDK, springdoc OpenAPI.
-- Caractéristiques : stateless (pas de base de données), s'intègre avec Firebase pour valider les tokens émis par Google Sign-In.
+Le service fournit :
 
-Pourquoi stateless ?
-- Le service ne conserve aucun état utilisateur côté serveur : il valide des tokens fournis par le client et retourne des informations extraites du token. Cela facilite le scaling horizontal et rend le service simple à déployer.
+* Validation des ID tokens Firebase via `FirebaseAuth.verifyIdToken()`
+* Endpoints REST : ping public et profil protégé
+* Authentification stateless (aucune base de données)
+* Scaling horizontal facile
+* CORS configurable par propriétés
+* API REST exposée au front-end et aux autres microservices
+* Swagger UI uniquement en profil `dev`
 
-## 2. Fonctionnalités
+Stack : Java 17, Spring Boot 3.3.x, Spring Security 6, Firebase Admin SDK, springdoc OpenAPI.
 
-- Vérification et décodage d'ID token Firebase via `FirebaseAuth.verifyIdToken()`.
-- Endpoints REST :
-  - `GET /api/public/ping` — endpoint public pour vérifier la disponibilité.
-  - `GET /api/auth/me` — endpoint protégé qui retourne le profil extrait du token (uid, email, name, picture, roles).
-- Sécurité : Spring Security configuré en mode stateless ; authentification via un filtre custom `FirebaseTokenFilter` qui extrait et vérifie le Bearer token.
-- CORS : contrôlé par propriétés (`security.cors.*`) et exposé via un `CorsConfigurationSource` intégré à la chaîne de sécurité.
-- Documentation OpenAPI/SWAGGER : fournie par `springdoc`; UI activée uniquement en profil `dev`.
+---
 
-## 3. Architecture (schéma texte)
+##  Structure du projet
 
-Pipeline d'une requête protégée (/api/auth/me) :
+```
+src/main/java/com/littlebook/auth
+  AuthApplication.java                 Entrypoint Spring Boot
+  api/
+     AuthController.java              Endpoints /api/public/ping, /api/auth/me
+  config/
+     FirebaseConfig.java              Init FirebaseApp / FirebaseAuth
+     CorsConfig.java                  Bean CorsConfigurationSource
+     CorsProperties.java              @ConfigurationProperties security.cors.*
+     OpenApiConfig.java (@Profile dev)  Swagger/OpenAPI en dev uniquement
+  security/
+      FirebaseTokenFilter.java         Vérification Bearer Firebase ID token
+      SecurityConfig.java              Spring Security stateless + CORS + filtres
 
-Client -> (préflight CORS possible) -> Tomcat -> Spring Security FilterChain
-  -> CorsConfigurationSource (vérifie origin/method/headers)
-  -> FirebaseTokenFilter (si route non publique/OPTIONS)
-       - lit header `Authorization: Bearer <ID_TOKEN>`
-       - appelle `FirebaseAuth.verifyIdToken(token)`
-       - sur succès : remplit SecurityContext avec Authentication (uid + détails)
-       - sur échec : ne met pas d'authentification (entrée renvoie 401 par EntryPoint)
-  -> Controller `AuthController` (lit Authentication et retourne profil)
-
-Composants principaux :
-- `FirebaseConfig` : initialisation `FirebaseApp` (fichier credentials ou ADC)
-- `FirebaseTokenFilter` : filtre de vérification des tokens
-- `SecurityConfig` : configuration Spring Security (STATELESS, exception handling, autorisations)
-- `CorsConfig` + `CorsProperties` : configuration CORS centralisée
-- `AuthController` : endpoints /api/public/ping et /api/auth/me
-
-## 4. Installation & Exécution
-
-Prerequis :
-- Java 17+ installé
-- Maven 3.8+
-
-Variables d'environnement (exigées / recommandées) :
-- `FIREBASE_CREDENTIALS` : chemin absolu vers le JSON du service account (optionnel si ADC utilisé)
-- `FIREBASE_PROJECT_ID` : (optionnel) project id Firebase
-- `SPRING_PROFILES_ACTIVE` : `dev` pour activer Swagger UI (optionnel)
-
-Exemples (PowerShell) :
-
-```powershell
-# définir les variables (Windows PowerShell)
-$env:FIREBASE_CREDENTIALS = "C:\Users\mathis\OneDrive - Universite Evry Val d'Essonne\M2\projet1\front\littlebook.json"
-$env:FIREBASE_PROJECT_ID = 'my-firebase-project'
-$env:SPRING_PROFILES_ACTIVE = 'dev'   # active swagger-ui
-
-# lancer en développement
-cd auth-service
-mvn spring-boot:run
+src/main/resources/application.yml         Config (port 8081, CORS, firebase, springdoc)
+Dockerfile                                  Build Docker
 ```
 
-Builder puis lancer le jar :
+---
 
-```powershell
-mvn -f auth-service/pom.xml -DskipTests package
-java -jar auth-service/target/auth-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
-```
+##  Principales caractéristiques
 
-Fichier `application.yml` (extrait) :
+* **Entrypoint** : `com.littlebook.auth.AuthApplication`
+* **Port par défaut** : `8081`
+* **API** : `/api/public/*` et `/api/auth/*`
+* **Base de données** : Aucune (stateless)
+* **OAuth Providers** : Google, Microsoft (via Firebase)
+* **Monitoring** : Swagger UI (profil `dev` uniquement)
+* **Sécurité** : Spring Security 6 + FirebaseTokenFilter
+
+---
+
+##  Configuration (application.yml extrait)
 
 ```yaml
 server:
@@ -85,12 +66,14 @@ server:
 security:
   cors:
     allowed-origins:
+      - "http://localhost:80"
+      - "http://localhost:5173"
       - "http://127.0.0.1:5500"
       - "http://localhost:5500"
-      - "http://localhost:5173"
-    allowed-methods: [GET,POST,PUT,PATCH,DELETE,OPTIONS]
-    allowed-headers: [Authorization,Content-Type,X-Requested-With]
-    exposed-headers: [Authorization,Content-Type,Location]
+    allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+    allowed-headers: [Authorization, Content-Type, X-Requested-With]
+    exposed-headers: [Authorization, Content-Type, Location]
+    max-age: 3600
 
 app:
   firebase:
@@ -99,122 +82,205 @@ app:
 
 springdoc:
   swagger-ui:
-    enabled: false   # activé via application-dev.yml
+    enabled: false  # activé via application-dev.yml
 ```
 
-⚠️ À compléter : gérer les secrets via Vault / KMS en prod.
-
-## 5. Endpoints
-
-1) GET /api/public/ping
-- Description : point de test public
-- Exemple :
-  ```bash
-  curl -i http://localhost:8081/api/public/ping
-  ```
-- Réponse 200 :
-  ```json
-  { "status": "ok" }
-  ```
-
-2) GET /api/auth/me
-- Description : retourne le profil de l'utilisateur authentifié via le Firebase ID token
-- Requête : header `Authorization: Bearer <ID_TOKEN>`
-- Exemple (sans token) :
-  ```bash
-  curl -i http://localhost:8081/api/auth/me
-  # => 401 Unauthorized
-  ```
-- Exemple (avec token) :
-  ```bash
-  curl -i -H "Authorization: Bearer <ID_TOKEN>" http://localhost:8081/api/auth/me
-  ```
-- Réponse 200 :
-  ```json
-  {
-    "uid": "uid123",
-    "email": "john@doe.com",
-    "name": "John Doe",
-    "picture": "https://...",
-    "roles": ["ROLE_USER"]
-  }
-  ```
-- Codes d'erreur :
-  - 401 Unauthorized : token manquant ou invalide
-  - 403 Forbidden : accès refusé (rare ici, route protégée sans permission)
-
-## 6. Sécurité
-
-- Bearer token : le filtre `FirebaseTokenFilter` lit `Authorization` et cherche `Bearer `.
-- Vérification : `firebaseAuth.verifyIdToken(token)` — en cas d'exception, la requête n'est pas authentifiée.
-- `SessionCreationPolicy.STATELESS` : justification
-  - Le serveur n'a pas à conserver d'état : tout s'appuie sur le token signé par Firebase. Cela permet un scaling horizontal simple et évite la charge mémoire/stockage côté serveur.
-- CORS :
-  - Les origines autorisées sont définies dans `application.yml` (`security.cors.allowed-origins`)
-  - Le bean `CorsConfigurationSource` est utilisé par Spring Security (garantit cohérence entre CORS et sécurité)
-
-## 7. Déploiement
-
-Build JAR :
-```bash
-mvn -f auth-service/pom.xml -DskipTests package
-```
-
-Variables à fournir en production :
-- `FIREBASE_CREDENTIALS` (ou utilisez ADC via `GOOGLE_APPLICATION_CREDENTIALS`),
-- `FIREBASE_PROJECT_ID`,
-- `SPRING_PROFILES_ACTIVE` (ne PAS activer `dev` en prod). 
-
-Recommandations prod :
-- Ne pas exposer Swagger UI en production.
-- Utiliser un secret manager (Vault / AWS KMS / GCP Secret Manager) pour stocker `firebase-sa.json` ou utiliser ADC.
-- Ajouter rate-limiting (ex: Bucket4j) si le service est exposé publiquement.
-- Configurer logs structurés et monitoring (Prometheus / Grafana) via Actuator metrics.
-
-## 8. Tests
-
-Exécuter la suite :
-```bash
-mvn -f auth-service/pom.xml test
-```
-
-Tests inclus :
-- `CorsPreflightTest` : vérifie les préflights OPTIONS et les en-têtes CORS.
-- `SecurityIntegrationTest` : tests d'intégration mockant `FirebaseAuth` pour couvrir :
-  - route publique accessible,
-  - route protégée renvoyant 401 sans token,
-  - route protégée renvoyant 200 avec token mocké,
-  - comportement en cas de token invalide.
-
-Comment mocker Firebase Admin pour les tests :
-- Les tests utilisent `@MockBean` pour `FirebaseAuth` et `FirebaseApp` (voir `SecurityIntegrationTest`). Ainsi la validation de token est simulée et les tests sont déterministes.
-
-
-
-## 9. FAQ & Conseils
-
-- Pourquoi pas de base de données ?
-  - Le service ne stocke aucun état : il se contente de vérifier des tokens signés par Firebase et retourne les informations. Ajouter une DB serait nécessaire uniquement si on veut garder des sessions, logs personnalisés ou lier des profils à des données internes.
-
-- Ajouter d'autres providers OAuth ?
-  - Abstraire la vérification dans un service `TokenVerificationService` et fournir des implémentations pour Firebase, Auth0, etc. Le filtre pourrait déléguer à ce service.
-
-- Étendre les endpoints
-  - Ajouter `/api/auth/refresh` si l'on souhaite gérer des refresh tokens côté serveur (nécessite stockage et revocation logiciel).
-
-## 10. Licence & auteurs
-
-Projet LittleBook — licence : voir `LICENSE` à la racine du dépôt.
+Profils :
+- `dev` : active swagger-ui (OpenApiConfig) ; utile en local
+- default : swagger-ui désactivé
 
 ---
 
-⚠️ À compléter / recommandations futures
-- Ajouter `application-prod.yml` et verrouiller Actuator/Swagger.
-- Ajouter un `.env.example` (variables d'environnement obligatoires) — recommandé pour nouveaux contributeurs.
-- Ajouter protection Basic Auth pour Swagger UI en dev si nécessaire.
+##  Endpoints principaux
 
-Si tu veux, je peux :
-- créer `auth-service/README.md` (fait),
-- ajouter `.env.example` automatiquement,
-- sécuriser Swagger UI par BasicAuth en dev,
-- créer un script `smoke-test.ps1`.
+Base : `/api`
+
+### Public
+- `GET /api/public/ping`  ping public, retourne `{ "status": "ok" }`
+
+### Protégés (Bearer Token requis)
+- `GET /api/auth/me`  profil courant
+  - Requiert : `Authorization: Bearer <ID_TOKEN>`
+  - Retour : `{ "uid": "...", "email": "...", "name": "...", "picture": "...", "roles": ["ROLE_USER"] }`
+  - 401 si token manquant/invalide
+
+---
+
+##  Sécurité & flux
+
+Pipeline de sécurité pour `/api/auth/me` :
+
+1. **Preflight** : OPTIONS autorisé (CORS)
+2. **CORS** : Appliqué via `CorsConfigurationSource`
+3. **FirebaseTokenFilter** :
+   - Lit `Authorization: Bearer <token>`
+   - Vérifie via `firebaseAuth.verifyIdToken(token)`
+   - Valide le provider (`google.com`, `microsoft.com` autorisés)
+   - Construit l'`Authentication` avec roles `ROLE_USER`
+4. **SecurityConfig** :
+   - Stateless (`SessionCreationPolicy.STATELESS`)
+   - `/api/public/**` et `/actuator/**` permis sans auth
+   - Swagger-ui autorisé uniquement en profil `dev`
+
+### Notes importantes
+- Provider non autorisé  401 (requête non authentifiée)
+- Email non vérifié avec `microsoft.com`  accepté mais logué en warning
+- Token expiré ou invalide  401
+
+---
+
+##  Prérequis
+
+* Java 17+
+* Maven 3.8+
+* Docker (optionnel)
+* Compte Firebase et credentials (service account JSON)
+
+---
+
+##  Développement  démarrer localement
+
+1. **Variables d'environnement** (exemples) :
+
+```powershell
+$env:FIREBASE_CREDENTIALS = "C:\\chemin\\firebase-sa.json"
+$env:FIREBASE_PROJECT_ID = "littlebook-b2d2d"
+$env:SPRING_PROFILES_ACTIVE = "dev"  # pour swagger-ui
+```
+
+2. Build :
+
+```powershell
+cd auth-service
+mvn -DskipTests clean package
+```
+
+3. Run via Maven :
+
+```powershell
+mvn spring-boot:run
+```
+
+4. Ou exécuter le jar :
+
+```powershell
+java -jar target/auth-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
+```
+
+Le service démarre sur `http://localhost:8081`
+
+Tests rapides :
+
+```powershell
+# Ping public
+curl -i http://localhost:8081/api/public/ping
+
+# Profil protégé (remplacer <ID_TOKEN> par un vrai token Firebase)
+curl -i -H "Authorization: Bearer <ID_TOKEN>" http://localhost:8081/api/auth/me
+```
+
+---
+
+##  Docker
+
+Build :
+
+```powershell
+docker build -t littlebook-auth:local auth-service/
+```
+
+Run via Docker Compose :
+
+```powershell
+docker-compose up -d auth-service
+```
+
+Le service écoute sur le port `8081`
+
+---
+
+##  Tests
+
+Lancer les tests :
+
+```bash
+mvn test
+```
+
+Couverture actuelle :
+- **CorsPreflightTest** : Vérification préflights et en-têtes CORS
+- **SecurityIntegrationTest** : Routes publiques/privées avec `@MockBean FirebaseAuth/FirebaseApp`
+
+Ajouter selon besoin :
+* Tests unitaires (FirebaseTokenFilter, provider validation)
+* Tests d'intégration (flow complet authentification)
+* Tests de charge (rate limiting)
+
+---
+
+##  Swagger / OpenAPI
+
+Swagger UI (profil `dev` uniquement) :
+
+```
+http://localhost:8081/swagger-ui.html
+```
+
+OpenAPI JSON :
+
+```
+http://localhost:8081/v3/api-docs
+```
+
+ **Important** : Désactiver swagger-ui en production pour des raisons de sécurité
+
+---
+
+##  Production / bonnes pratiques
+
+Configuration pour environnement de production :
+
+*  Fournir `FIREBASE_CREDENTIALS` (ou ADC) et `FIREBASE_PROJECT_ID`
+*  Ne pas activer profil `dev` (swagger-ui désactivé)
+*  Stocker les secrets dans un secret manager (Vault, AWS KMS, GCP Secret Manager)
+*  Ajouter rate limiting (Bucket4j) si exposé publiquement
+*  Activer métriques/monitoring (Prometheus/Grafana via Actuator)
+*  Logs structurés pour les accès (provider, email, statut)
+*  HTTPS obligatoire (TLS 1.3)
+*  CORS restrictif (limiter aux domaines frontend autorisés)
+
+---
+
+##  Fonctionnalités implémentées
+
+-  **Validation Firebase ID token** : Support Google & Microsoft
+-  **Endpoints REST** : Ping public + profil protégé
+-  **Spring Security stateless** : FirebaseTokenFilter custom
+-  **CORS configurable** : Configuration par propriétés
+-  **Swagger UI** : Activable en profil `dev` uniquement
+-  **Tests d'intégration** : MockBean Firebase
+-  **Provider validation** : Whitelist google.com, microsoft.com
+-  **Logging** : SLF4J avec contexte (provider, email)
+-  **Stateless** : Scaling horizontal sans session
+
+##  Perspectives futures
+
+### Court terme (1-2 mois)
+1. **Rate Limiting**  Protection contre brute-force avec Bucket4j
+2. **Tests unitaires**  Coverage > 80% avec JUnit5 + Mockito
+3. **Token refresh**  Endpoint pour rafraîchir les tokens expirés
+4. **Admin endpoints**  Endpoints `/api/admin/*` avec `ROLE_ADMIN`
+
+### Moyen terme (3-6 mois)
+1. **Multi-provider**  Support Apple, GitHub, LinkedIn OAuth
+2. **Token revocation**  Liste noire de tokens révoqués (Redis)
+3. **Audit Trail**  Logging complet des authentifications (succès/échecs)
+4. **Metrics**  Exposition Prometheus (auth rate, failures, latency)
+5. **Circuit Breaker**  Resilience4j pour appels Firebase
+
+### Long terme (6-12 mois)
+1. **JWT issuing**  Émettre des JWT internes après validation Firebase
+2. **Session management**  Support sessions pour clients non-SPA
+3. **2FA**  Support authentification à deux facteurs
+4. **Security events**  Webhooks sur événements de sécurité critiques
+5. **Geographic restrictions**  Blocage par pays/région

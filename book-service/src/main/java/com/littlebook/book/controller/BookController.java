@@ -2,8 +2,14 @@ package com.littlebook.book.controller;
 
 import com.littlebook.book.dto.BookRequest;
 import com.littlebook.book.dto.BookResponse;
+import com.littlebook.book.dto.openlibrary.OpenLibrarySearchResponse;
 import com.littlebook.book.entity.BookEntity;
+import com.littlebook.book.exception.OpenLibraryException;
 import com.littlebook.book.service.BookService;
+import com.littlebook.book.service.BookSyncService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -11,16 +17,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/books")
+@RequestMapping("/api/book")
+@Tag(name = "Books", description = "API pour gérer les livres")
 public class BookController {
 
     private final BookService service;
+    private final BookSyncService syncService;
 
-    public BookController(BookService service) {
+    public BookController(BookService service, BookSyncService syncService) {
         this.service = service;
+        this.syncService = syncService;
     }
 
     // --- Diagnostics ---
@@ -31,10 +41,85 @@ public class BookController {
     @GetMapping("/ping")
     public String ping() { return "pong"; }
 
+    // --- OpenLibrary Search & Sync (MUST BE BEFORE /{id} routes) ---
+
+    @GetMapping("/search-openlibrary")
+    @Operation(summary = "Rechercher des livres sur OpenLibrary sans les ajouter", description = "Affiche les résultats OpenLibrary sans synchronisation automatique")
+    public Page<BookResponse> searchOpenLibraryOnly(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        if ((title == null || title.isBlank()) && (author == null || author.isBlank())) {
+            throw new IllegalArgumentException("Au moins 'title' ou 'author' est requis");
+        }
+        
+        var pageable = PageRequest.of(page, Math.min(size, 100));
+        return syncService.searchOpenLibraryOnly(title, author, pageable).map(this::mapToResponse);
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Rechercher des livres sur OpenLibrary et les synchroniser", description = "Cherche par titre et/ou auteur et synchronise les résultats (DEPRECATED - utiliser search-openlibrary + add-from-openlibrary)")
+    public Page<BookResponse> search(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        if ((title == null || title.isBlank()) && (author == null || author.isBlank())) {
+            throw new IllegalArgumentException("Au moins 'title' ou 'author' est requis");
+        }
+        
+        var pageable = PageRequest.of(page, Math.min(size, 100), Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return syncService.searchAndSync(title, author, pageable).map(this::mapToResponse);
+    }
+
+    @PostMapping("/add-from-openlibrary")
+    @Operation(summary = "Ajouter un livre depuis OpenLibrary", description = "Ajoute un livre spécifique à la collection en utilisant son OpenLibrary ID")
+    public ResponseEntity<BookResponse> addFromOpenLibrary(@RequestParam String openlibraryId) {
+        // Vérifier si le livre existe déjà
+        Optional<BookEntity> existing = service.findByOpenlibraryId(openlibraryId);
+        if (existing.isPresent()) {
+            return ResponseEntity.ok(mapToResponse(existing.get()));
+        }
+        
+        // Chercher le livre sur OpenLibrary et l'ajouter
+        BookEntity synced = syncService.syncByOpenLibraryId(openlibraryId);
+        if (synced == null) {
+            throw new OpenLibraryException("Aucun livre trouvé sur OpenLibrary pour ID: " + openlibraryId);
+        }
+        return ResponseEntity.status(201).body(mapToResponse(synced));
+    }
+
+    @PostMapping("/sync/{isbn}")
+    @Operation(summary = "Synchroniser un livre via ISBN", description = "Récupère les données OpenLibrary et les sauvegarde en base")
+    public ResponseEntity<BookResponse> syncByIsbn(@PathVariable String isbn) {
+        BookEntity synced = syncService.syncByIsbn(isbn);
+        if (synced == null) {
+            throw new OpenLibraryException("Aucun livre trouvé sur OpenLibrary pour ISBN: " + isbn);
+        }
+        return ResponseEntity.ok(mapToResponse(synced));
+    }
+
+    @GetMapping("/by-isbn13")
+    public ResponseEntity<BookResponse> getByIsbn13(@RequestParam String isbn13) {
+        return service.findByIsbn13(isbn13)
+                .map(b -> ResponseEntity.ok(mapToResponse(b)))
+                .orElseThrow(() -> new IllegalArgumentException("Book with ISBN13 " + isbn13 + " not found"));
+    }
+
+    @GetMapping("/by-olid")
+    public ResponseEntity<BookResponse> getByOpenlibraryId(@RequestParam String olId) {
+        return service.findByOpenlibraryId(olId)
+                .map(b -> ResponseEntity.ok(mapToResponse(b)))
+                .orElseThrow(() -> new IllegalArgumentException("Book with OpenLibrary ID " + olId + " not found"));
+    }
+
     // --- CRUD ---
 
     @PostMapping
-    public ResponseEntity<BookResponse> create(@RequestBody BookRequest req) {
+    public ResponseEntity<BookResponse> create(@Valid @RequestBody BookRequest req) {
         BookEntity saved = service.create(mapToEntity(req));
         return ResponseEntity
                 .created(URI.create("/books/" + saved.getId()))
@@ -43,21 +128,14 @@ public class BookController {
 
     @GetMapping("/{id}")
     public ResponseEntity<BookResponse> getById(@PathVariable UUID id) {
-        try {
-            return ResponseEntity.ok(mapToResponse(service.getById(id)));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        BookEntity book = service.getById(id);
+        return ResponseEntity.ok(mapToResponse(book));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<BookResponse> update(@PathVariable UUID id, @RequestBody BookRequest req) {
-        try {
-            BookEntity updated = service.update(id, mapToEntity(req));
-            return ResponseEntity.ok(mapToResponse(updated));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<BookResponse> update(@PathVariable UUID id, @Valid @RequestBody BookRequest req) {
+        BookEntity updated = service.update(id, mapToEntity(req));
+        return ResponseEntity.ok(mapToResponse(updated));
     }
 
     @DeleteMapping("/{id}")
@@ -78,18 +156,14 @@ public class BookController {
         return service.list(q, isbn, openlibraryId, pageable).map(this::mapToResponse);
     }
 
-    @GetMapping("/by-isbn13")
-    public ResponseEntity<BookResponse> getByIsbn13(@RequestParam String isbn13) {
-        return service.findByIsbn13(isbn13)
-                .map(b -> ResponseEntity.ok(mapToResponse(b)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
+    // --- OpenLibrary Search & Sync ---
 
-    @GetMapping("/by-olid")
-    public ResponseEntity<BookResponse> getByOpenlibraryId(@RequestParam String olId) {
-        return service.findByOpenlibraryId(olId)
-                .map(b -> ResponseEntity.ok(mapToResponse(b)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    @GetMapping("/openlibrary/test/{isbn}")
+    @Operation(summary = "Test direct API OpenLibrary", description = "Teste l'API OpenLibrary sans sauvegarder en base")
+    public ResponseEntity<OpenLibrarySearchResponse> testOpenLibraryApi(@PathVariable String isbn) {
+        // Ce endpoint n'est à utiliser que pour le debug
+        // On retourne la réponse brute d'OpenLibrary
+        return ResponseEntity.ok(null);  // À implémenter si besoin
     }
 
     // --- Mapping helpers ---

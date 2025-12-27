@@ -17,14 +17,19 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        globally_quoted_identifiers: true
 
-  # Disable automatic execution of SQL scripts for local H2 dev to avoid running
-  # PostgreSQL-specific scripts (e.g. CREATE EXTENSION) when using H2.
+  # Enable automatic execution of SQL scripts for data initialization
   sql:
     init:
-      mode: never
+      mode: always
 
 management:
   endpoints:
@@ -37,3 +42,10 @@ app:
   firebase:
     credentials-path: ${FIREBASE_CREDENTIALS:}
     project-id: ${FIREBASE_PROJECT_ID:}
+
+# OpenLibrary API configuration
+openlibrary:
+  api:
+    base-url: https://openlibrary.org/search.json
+    timeout: 5000                          # milliseconds
+    max-retries: 3

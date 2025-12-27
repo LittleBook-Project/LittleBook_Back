@@ -1,42 +1,49 @@
+server:
+  port: 8080
+
 spring:
   application:
-    name: littlebook-back
+    name: gateway
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/auth/(?<segment>.*), /$\{segment}
+        
+        - id: user-service
+          uri: http://user-service:8082
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - RewritePath=/api/user/(?<segment>.*), /$\{segment}
+        
+        - id: review-service
+          uri: http://review-service:8083
+          predicates:
+            - Path=/api/review/**
+          filters:
+            - RewritePath=/api/review/(?<segment>.*), /$\{segment}
+        
+        - id: book-service
+          uri: http://book-service:8084
+          predicates:
+            - Path=/api/book/**
+          filters:
+            - RewritePath=/api/book/(?<segment>.*), /$\{segment}
+        
+        - id: admin-service
+          uri: http://admin-service:8085
+          predicates:
+            - Path=/api/admin/**
+          filters:
+            - RewritePath=/api/admin/(?<segment>.*), /$\{segment}
 
-  main:
-    banner-mode: console # garde l’affichage de la bannière Spring Boot
-    lazy-initialization: false # charge tout au démarrage (bon pour dev)
-
-  output:
-    ansi:
-      enabled: always # couleurs dans la console
-
-  datasource:
-    url: jdbc:postgresql://db.epgxaozzqwdlbwtuefye.supabase.co:5432/postgres?sslmode=require
-    username: postgres
-    password: Need2eatandsleep@diner
-    driver-class-name: org.postgresql.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-
-server:
-  port: 8080 # port du serveur
-  error:
-    include-message: always # utile pour debug les erreurs
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-
-app:
-  firebase: # config Firebase
-    credentials-path: ${FIREBASE_CREDENTIALS}
-    project-id: ${FIREBASE_PROJECT_ID}
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG

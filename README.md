@@ -1,9 +1,6 @@
-# LittleBook_Back
-# 📘 Backend – Spring Boot 3 + Java 17 + SQL + Firebase
+# 📘 LittleBook Backend
 
-LittleBook est une application de type réseau social visant à permettre aux utilisateurs de partager du contenu, de suivre d'autres membres et d'interagir à travers des publications et commentaires.  
-Ce dépôt correspond à la partie **back-end**, développée avec **Spring Boot**, assurant la gestion des utilisateurs, des rôles et des futures entités (posts, relations, etc.). Ce back sera en communication avec une partie **front-end** réalisé en parallèle avec **React**
-
+Backend de LittleBook : architecture microservices avec Spring Boot 3 + Java 17 pour une plateforme de partage de livres.
 ---
 ## 👥 Équipe de développement
 
@@ -97,16 +94,31 @@ Pour lancer les microservices principaux (admin, auth, user) sans configuration 
 ```
 
 3) Accédez aux Swagger UI:
-- Admin-service: http://localhost:8085/swagger-ui.html
-- Auth-service: http://localhost:8081/swagger-ui.html
-- User-service: http://localhost:8082/swagger-ui.html
-- Review-service: http://localhost:8083/swagger-ui.html
-- Book-service: http://localhost:8084/swagger-ui.html
 
 Notes:
-- Les ports sont mappés 1:1 entre hôte et conteneur pour correspondre aux `server.port` définis dans chaque `application.yml`.
-- Le service `auth-service` active Swagger UI en profil `dev` via Docker Compose.
-- Si vous préférez un lancement détaché: `docker-compose up --build -d` puis `docker-compose down` pour arrêter.
+
+## 🐳 Démarrage avec Docker Compose
+
+### Démarrage simple par service (racine du projet)
+
+Depuis la racine de `LittleBook_Back/` (où se trouve le `docker-compose.yml`) pour lancer les services principaux :
+
+```bash
+docker compose up -d
+```
+
+Arrêter les services :
+
+```bash
+docker compose down
+```
+
+Rebuild d'un service après modification :
+
+```bash
+docker compose build book-service
+docker compose up -d book-service
+```
 
 ---
 ## 🧩 Implémentation actuelle
@@ -152,7 +164,38 @@ Le projet utilise une approche **CI/CD automatisée** avec GitHub Actions.
 2. **Push des images Docker** vers GitHub Container Registry (`ghcr.io`)
 3. **Tag automatique** avec le SHA du commit et `latest` pour la branche principale
 
-#### Déployer sur un serveur
+#### Déploiement gratuit sur Render.com (Recommandé)
+
+**Render.com** offre un plan gratuit parfait pour les projets comme LittleBook.
+
+1. **Créez un compte sur [Render.com](https://render.com)**
+
+2. **Connectez votre dépôt GitHub** :
+   - Dashboard → New → Blueprint
+   - Sélectionnez le dépôt `LittleBook_Back`
+   - Render détectera automatiquement le fichier `render.yaml`
+
+3. **Configurez les secrets** (uniquement pour auth-service) :
+   - Dans le dashboard Render, allez sur le service `littlebook-auth`
+   - Environment → Add Secret File
+   - Nom : `FIREBASE_CREDENTIALS`
+   - Contenu : Collez le contenu de votre fichier `littlebook.json`
+
+4. **Déployez** :
+   - Cliquez sur "Apply" pour déployer tous les services
+   - Render build et déploie automatiquement chaque microservice
+   - Vous obtiendrez une URL publique pour chaque service
+
+5. **Accédez à vos services** :
+   - `https://littlebook-admin.onrender.com`
+   - `https://littlebook-auth.onrender.com`
+   - `https://littlebook-user.onrender.com`
+   - `https://littlebook-review.onrender.com`
+   - `https://littlebook-book.onrender.com`
+
+⚠️ **Note** : Le plan gratuit met les services en veille après 15 min d'inactivité (démarrage ~30s).
+
+#### Déployer sur un serveur VPS
 
 1. **Sur votre serveur de production**, installez Docker et Docker Compose
 
@@ -185,11 +228,12 @@ Le projet utilise une approche **CI/CD automatisée** avec GitHub Actions.
    docker-compose -f docker-compose.prod.yml ps
    ```
 
-#### Plateformes de déploiement recommandées
+#### Autres plateformes de déploiement
 
-- **VPS** : DigitalOcean, OVH, AWS EC2
-- **PaaS** : Railway.app, Render.com, Fly.io
-- **Cloud** : AWS ECS, Google Cloud Run, Azure Container Instances
+- **Render.com** : ✅ Gratuit, simple, recommandé (voir ci-dessus)
+- **Railway.app** : Gratuit avec 500h/mois, détection auto Dockerfile
+- **Fly.io** : Gratuit jusqu'à 3 VMs, bon pour microservices
+- **VPS** : DigitalOcean, OVH, AWS EC2 (payant mais plus de contrôle)
 
 #### Notes de sécurité
 

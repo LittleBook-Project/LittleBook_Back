@@ -1,7 +1,10 @@
 package com.littlebook.book.service;
 
 import com.littlebook.book.entity.BookEntity;
+import com.littlebook.book.exception.BookNotFoundException;
 import com.littlebook.book.repository.BookRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -12,6 +15,7 @@ import java.util.UUID;
 
 @Service
 public class BookService {
+    private static final Logger logger = LoggerFactory.getLogger(BookService.class);
     private final BookRepository repo;
 
     public BookService(BookRepository repo) {
@@ -36,7 +40,8 @@ public class BookService {
     }
 
     public BookEntity getById(UUID id) {
-        return repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Book not found"));
+        return repo.findById(id)
+                .orElseThrow(() -> new BookNotFoundException("Book with ID " + id + " not found"));
     }
 
     public BookEntity create(BookEntity b) {

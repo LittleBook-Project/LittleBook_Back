@@ -17,9 +17,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: true
-    # Ensure Hibernate creates/updates schema before Spring runs data.sql
     defer-datasource-initialization: true
 
 
@@ -31,11 +30,7 @@ spring:
   # SQL initialization mode for embedded DB (data.sql will be executed)
   sql:
     init:
-      mode: embedded
-  # Prevent execution of legacy/postgres schema.sql left in resources by clearing schema locations.
-  # Keep data.sql as the source of truth for H2 embedded initialization.
-  schema-locations: []
-  data-locations: classpath:data.sql
+      mode: always
 
 management:
   endpoints:
@@ -56,4 +51,5 @@ app:
 # Swagger/OpenAPI UI path
 springdoc:
   swagger-ui:
+    enabled: true
     path: /swagger-ui.html

@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Test Firebase Google → ID token</title>
+    <title>Test Firebase Google & Microsoft → ID token</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       body {
@@ -15,6 +15,8 @@
         border-radius: 8px;
         border: 1px solid #ccc;
         cursor: pointer;
+        margin-right: 8px;
+        margin-bottom: 8px;
       }
       pre {
         background: #f6f8fa;
@@ -31,15 +33,18 @@
     </style>
   </head>
   <body>
-    <h1>Login Google → récupérer un ID token</h1>
+    <h1>Login Google / Microsoft → récupérer un ID token</h1>
     <ol>
-      <li>Clique <b>Login Google</b></li>
+      <li>Clique <b>Login Google</b> ou <b>Login Microsoft</b></li>
       <li>
         On affiche l’<code>idToken</code> (tronqué) puis on appelle
         <code>/api/auth/me</code>
       </li>
     </ol>
+
     <button id="google">Login Google</button>
+    <button id="microsoft">Login Microsoft</button>
+
     <pre id="out">Prêt.</pre>
 
     <script type="module">
@@ -47,10 +52,11 @@
       import {
         getAuth,
         GoogleAuthProvider,
+        OAuthProvider,
         signInWithPopup,
       } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-      // ⚠️ Remplace par TA config exacte depuis Firebase Console
+      // ⚠️ Config exacte depuis Firebase Console
       const firebaseConfig = {
         apiKey: "AIzaSyBc6nTZhelJmNd3b7jEToAy9AIKdniEGQA",
         authDomain: "littlebook-b2d2d.firebaseapp.com",
@@ -65,15 +71,27 @@
       const auth = getAuth(app);
       const out = document.getElementById("out");
 
-      document.getElementById("google").onclick = async () => {
-        out.textContent = "Ouverture popup Google…";
-        try {
-          const cred = await signInWithPopup(auth, new GoogleAuthProvider());
-          const idToken = await cred.user.getIdToken();
-          out.textContent = "idToken: " + idToken.slice(0, 60) + "…\n";
+      // Fournisseurs d'identité
+      const googleProvider = new GoogleAuthProvider();
+      // Force l’écran de choix de compte Google
+      googleProvider.setCustomParameters({ prompt: "select_account" });
 
-          console.log("✅ ID Token Firebase :", idToken);
-          alert("Ton ID token est dans la console navigateur !");
+      const microsoftProvider = new OAuthProvider("microsoft.com");
+      // Force aussi le choix de compte côté Microsoft
+      microsoftProvider.setCustomParameters({ prompt: "select_account" });
+      // Exemple de scope Microsoft (optionnel) :
+      // microsoftProvider.addScope("User.Read");
+
+      async function loginWith(providerName, provider) {
+        out.textContent = `Ouverture popup ${providerName}…`;
+        try {
+          const cred = await signInWithPopup(auth, provider);
+          const idToken = await cred.user.getIdToken();
+
+          out.textContent =
+            `${providerName}: idToken: ` + idToken.slice(0, 60) + "…\n";
+          console.log(`✅ ID Token Firebase (${providerName}):`, idToken);
+          alert(`Ton ID token ${providerName} est dans la console navigateur !`);
 
           const resp = await fetch("http://localhost:8081/api/auth/me", {
             headers: { Authorization: `Bearer ${idToken}` },
@@ -86,9 +104,16 @@
             "\n" +
             text;
         } catch (e) {
-          out.textContent = "Erreur: " + e.message;
+          console.error(e);
+          out.textContent = `${providerName} - Erreur: ` + e.message;
         }
-      };
+      }
+
+      document.getElementById("google").onclick = () =>
+        loginWith("Google", googleProvider);
+
+      document.getElementById("microsoft").onclick = () =>
+        loginWith("Microsoft", microsoftProvider);
     </script>
   </body>
 </html>

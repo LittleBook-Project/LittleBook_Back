@@ -1,5 +1,3 @@
--- Initial test reviews inserted at startup for local testing
-
 INSERT INTO reviews (
   id,
   user_uuid,
