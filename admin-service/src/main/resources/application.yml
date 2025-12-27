@@ -19,6 +19,7 @@ spring:
     hibernate:
       ddl-auto: create
     show-sql: true
+    defer-datasource-initialization: true
 
 
   # Enable H2 console for local dev
@@ -29,7 +30,7 @@ spring:
   # SQL initialization mode for embedded DB (data.sql will be executed)
   sql:
     init:
-      mode: never
+      mode: always
 
 management:
   endpoints:
@@ -50,4 +51,5 @@ app:
 # Swagger/OpenAPI UI path
 springdoc:
   swagger-ui:
+    enabled: true
     path: /swagger-ui.html

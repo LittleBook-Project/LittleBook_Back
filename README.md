@@ -1,9 +1,6 @@
-# LittleBook_Back
-# 📘 Backend – Spring Boot 3 + Java 17 + SQL + Firebase
+# 📘 LittleBook Backend
 
-LittleBook est une application de type réseau social visant à permettre aux utilisateurs de partager du contenu, de suivre d'autres membres et d'interagir à travers des publications et commentaires.  
-Ce dépôt correspond à la partie **back-end**, développée avec **Spring Boot**, assurant la gestion des utilisateurs, des rôles et des futures entités (posts, relations, etc.). Ce back sera en communication avec une partie **front-end** réalisé en parallèle avec **React**
-
+Backend de LittleBook : architecture microservices avec Spring Boot 3 + Java 17 pour une plateforme de partage de livres.
 ---
 ## 👥 Équipe de développement
 
@@ -97,16 +94,31 @@ Pour lancer les microservices principaux (admin, auth, user) sans configuration 
 ```
 
 3) Accédez aux Swagger UI:
-- Admin-service: http://localhost:8085/swagger-ui.html
-- Auth-service: http://localhost:8081/swagger-ui.html
-- User-service: http://localhost:8082/swagger-ui.html
-- Review-service: http://localhost:8083/swagger-ui.html
-- Book-service: http://localhost:8084/swagger-ui.html
 
 Notes:
-- Les ports sont mappés 1:1 entre hôte et conteneur pour correspondre aux `server.port` définis dans chaque `application.yml`.
-- Le service `auth-service` active Swagger UI en profil `dev` via Docker Compose.
-- Si vous préférez un lancement détaché: `docker-compose up --build -d` puis `docker-compose down` pour arrêter.
+
+## 🐳 Démarrage avec Docker Compose
+
+### Démarrage simple par service (racine du projet)
+
+Depuis la racine de `LittleBook_Back/` (où se trouve le `docker-compose.yml`) pour lancer les services principaux :
+
+```bash
+docker compose up -d
+```
+
+Arrêter les services :
+
+```bash
+docker compose down
+```
+
+Rebuild d'un service après modification :
+
+```bash
+docker compose build book-service
+docker compose up -d book-service
+```
 
 ---
 ## 🧩 Implémentation actuelle

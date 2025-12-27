@@ -69,6 +69,49 @@ public class BookSyncService {
     }
     
     /**
+     * Synchronise un livre depuis OpenLibrary par OpenLibrary ID
+     * @param openlibraryId OpenLibrary ID (ex: OL123456W)
+     * @return Le livre créé ou mis à jour
+     */
+    public BookEntity syncByOpenLibraryId(String openlibraryId) {
+        logger.info("Syncing book from OpenLibrary for ID: {}", openlibraryId);
+        
+        // Chercher un livre existant
+        Optional<BookEntity> existing = bookService.findByOpenlibraryId(openlibraryId);
+        
+        if (existing.isPresent()) {
+            logger.info("Book already exists with OpenLibrary ID: {}, updating lastSyncedAt", openlibraryId);
+            BookEntity book = existing.get();
+            book.setLastSyncedAt(LocalDateTime.now());
+            return bookService.update(book.getId(), book);
+        }
+        
+        // Chercher les éditions du work sur OpenLibrary
+        OpenLibrarySearchResponse response = openLibraryClient.searchEditionsByWorkId(openlibraryId);
+        
+        if (response == null || response.getDocs() == null || response.getDocs().isEmpty()) {
+            logger.warn("No editions found on OpenLibrary for work ID: {}, trying to fetch work data directly", openlibraryId);
+            // Fallback: essayer de récupérer les données du work directement
+            OpenLibraryBook workData = openLibraryClient.fetchWorkById(openlibraryId);
+            if (workData != null) {
+                logger.info("Successfully fetched work data directly for ID: {}", openlibraryId);
+                BookEntity newBook = mapOpenLibraryToEntity(workData);
+                newBook.setLastSyncedAt(LocalDateTime.now());
+                return bookService.create(newBook);
+            }
+            logger.warn("No work data found on OpenLibrary for ID: {}", openlibraryId);
+            return null;
+        }
+        
+        // Prendre la première édition
+        OpenLibraryBook olBook = response.getDocs().get(0);
+        BookEntity newBook = mapOpenLibraryToEntity(olBook);
+        newBook.setLastSyncedAt(LocalDateTime.now());
+        
+        return bookService.create(newBook);
+    }
+    
+    /**
      * Recherche des livres sur OpenLibrary et les sauvegarde en base
      * @param title Titre du livre
      * @param author Auteur du livre
@@ -140,6 +183,35 @@ public class BookSyncService {
     }
     
     /**
+     * Recherche sur OpenLibrary SANS synchronisation automatique
+     * Retourne les résultats bruts pour affichage sans les ajouter en base
+     */
+    public Page<BookEntity> searchOpenLibraryOnly(String title, String author, Pageable pageable) {
+        logger.info("Searching OpenLibrary without sync: title={}, author={}", title, author);
+        
+        OpenLibrarySearchResponse response = openLibraryClient.search(title, author, null, pageable.getPageSize());
+        
+        if (response == null || response.getDocs() == null || response.getDocs().isEmpty()) {
+            logger.warn("No books found on OpenLibrary for title={}, author={}", title, author);
+            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        }
+        
+        List<BookEntity> books = new ArrayList<>();
+        
+        for (OpenLibraryBook olBook : response.getDocs()) {
+            try {
+                BookEntity book = mapOpenLibraryToEntity(olBook);
+                // Ne pas sauvegarder, juste mapper pour l'affichage
+                books.add(book);
+            } catch (Exception e) {
+                logger.error("Error mapping OpenLibrary book: {}", olBook.getTitle(), e);
+            }
+        }
+        
+        return new PageImpl<>(books, pageable, response.getNumFound());
+    }
+    
+    /**
      * Convertit un livre OpenLibrary en BookEntity
      */
     private BookEntity mapOpenLibraryToEntity(OpenLibraryBook olBook) {
@@ -148,10 +220,14 @@ public class BookSyncService {
         book.setOpenlibraryId(olBook.getOpenLibraryId());
         book.setTitle(olBook.getTitle());
         book.setSubtitle(olBook.getSubtitle());
-        book.setAuthors(olBook.getAuthorsAsString());
-        book.setPublishYear(olBook.getFirstPublishYear());
+        String authors = olBook.getAuthorsAsString();
+        if (authors == null || authors.isBlank()) {
+            authors = "Auteur inconnu";
+        }
+        book.setAuthors(authors);
+        book.setPublishYear(olBook.getPublishYearNormalized());
         book.setCoverUrl(olBook.getCoverUrl());
-        book.setDescription(olBook.getDescription());
+        book.setDescription(olBook.getDescriptionNormalized());
         book.setSubjects(olBook.getSubjectsAsString());
         
         // ISBN

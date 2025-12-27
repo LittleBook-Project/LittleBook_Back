@@ -20,30 +20,48 @@ public class BookEntity {
     @GeneratedValue
     private UUID id;
 
-    @Column(unique = true)
+    @Column(unique = true, name = "openlibrary_id")
     private String openlibraryId;
 
+    @Column(name = "isbn10")
     private String isbn10;
+    
+    @Column(name = "isbn13")
     private String isbn13;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "title")
     private String title;
 
+    @Column(name = "subtitle")
     private String subtitle;
+    
+    @Column(name = "authors")
     private String authors;
+    
+    @Column(name = "publish_year")
     private Integer publishYear;
+    
+    @Column(name = "cover_url")
     private String coverUrl;
 
     @Lob
+    @Column(name = "description")
     private String description;
 
+    @Column(name = "subjects")
     private String subjects;
 
     @Lob
+    @Column(name = "source_data")
     private String sourceData;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    @Column(name = "last_synced_at")
     private LocalDateTime lastSyncedAt;
 
     @PrePersist

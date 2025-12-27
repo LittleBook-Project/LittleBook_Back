@@ -17,10 +17,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/books")
+@RequestMapping("/api/book")
 @Tag(name = "Books", description = "API pour gérer les livres")
 public class BookController {
 
@@ -42,8 +43,24 @@ public class BookController {
 
     // --- OpenLibrary Search & Sync (MUST BE BEFORE /{id} routes) ---
 
+    @GetMapping("/search-openlibrary")
+    @Operation(summary = "Rechercher des livres sur OpenLibrary sans les ajouter", description = "Affiche les résultats OpenLibrary sans synchronisation automatique")
+    public Page<BookResponse> searchOpenLibraryOnly(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        if ((title == null || title.isBlank()) && (author == null || author.isBlank())) {
+            throw new IllegalArgumentException("Au moins 'title' ou 'author' est requis");
+        }
+        
+        var pageable = PageRequest.of(page, Math.min(size, 100));
+        return syncService.searchOpenLibraryOnly(title, author, pageable).map(this::mapToResponse);
+    }
+
     @GetMapping("/search")
-    @Operation(summary = "Rechercher des livres sur OpenLibrary", description = "Cherche par titre et/ou auteur et synchronise les résultats")
+    @Operation(summary = "Rechercher des livres sur OpenLibrary et les synchroniser", description = "Cherche par titre et/ou auteur et synchronise les résultats (DEPRECATED - utiliser search-openlibrary + add-from-openlibrary)")
     public Page<BookResponse> search(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String author,
@@ -56,6 +73,23 @@ public class BookController {
         
         var pageable = PageRequest.of(page, Math.min(size, 100), Sort.by(Sort.Direction.DESC, "updatedAt"));
         return syncService.searchAndSync(title, author, pageable).map(this::mapToResponse);
+    }
+
+    @PostMapping("/add-from-openlibrary")
+    @Operation(summary = "Ajouter un livre depuis OpenLibrary", description = "Ajoute un livre spécifique à la collection en utilisant son OpenLibrary ID")
+    public ResponseEntity<BookResponse> addFromOpenLibrary(@RequestParam String openlibraryId) {
+        // Vérifier si le livre existe déjà
+        Optional<BookEntity> existing = service.findByOpenlibraryId(openlibraryId);
+        if (existing.isPresent()) {
+            return ResponseEntity.ok(mapToResponse(existing.get()));
+        }
+        
+        // Chercher le livre sur OpenLibrary et l'ajouter
+        BookEntity synced = syncService.syncByOpenLibraryId(openlibraryId);
+        if (synced == null) {
+            throw new OpenLibraryException("Aucun livre trouvé sur OpenLibrary pour ID: " + openlibraryId);
+        }
+        return ResponseEntity.status(201).body(mapToResponse(synced));
     }
 
     @PostMapping("/sync/{isbn}")
