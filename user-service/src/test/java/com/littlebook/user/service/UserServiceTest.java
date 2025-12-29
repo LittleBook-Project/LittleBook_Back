@@ -18,13 +18,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
-<<<<<<< HEAD
-
-
-
-
-=======
->>>>>>> d0efca2f7b4792bd4f1e519a36c86f3a1165f275
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
