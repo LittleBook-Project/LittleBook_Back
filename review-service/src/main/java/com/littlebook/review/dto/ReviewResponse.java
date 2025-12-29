@@ -10,6 +10,7 @@ public class ReviewResponse {
     private Integer rating;
     private String userUuid;
     private String bookIsbn;
+    private String bookId;
 
     public ReviewResponse() {
     }
@@ -19,13 +20,15 @@ public class ReviewResponse {
                           LocalDate reviewCreationDate,
                           Integer rating,
                           String userUuid,
-                          String bookIsbn) {
+                          String bookIsbn,
+                          String bookId) {
         this.id = id;
         this.description = description;
         this.reviewCreationDate = reviewCreationDate;
         this.rating = rating;
         this.userUuid = userUuid;
         this.bookIsbn = bookIsbn;
+        this.bookId = bookId;
     }
 
     public Long getId() { return id; }
@@ -45,4 +48,7 @@ public class ReviewResponse {
 
     public String getBookIsbn() { return bookIsbn; }
     public void setBookIsbn(String bookIsbn) { this.bookIsbn = bookIsbn; }
+
+    public String getBookId() { return bookId; }
+    public void setBookId(String bookId) { this.bookId = bookId; }
 }

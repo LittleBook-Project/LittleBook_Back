@@ -18,13 +18,18 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        globally_quoted_identifiers: true
 
-  # Disable automatic execution of SQL scripts for local H2 dev to avoid running
-  # PostgreSQL-specific scripts (e.g. CREATE EXTENSION) when using H2.
+  # Enable automatic execution of SQL scripts for data initialization
   sql:
     init:
-      mode: never
+      mode: always
 
 management:
   endpoints:

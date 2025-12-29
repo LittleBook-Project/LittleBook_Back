@@ -1,6 +1,7 @@
 package com.littlebook.book.service.external;
 
 import com.littlebook.book.dto.openlibrary.OpenLibrarySearchResponse;
+import com.littlebook.book.dto.openlibrary.OpenLibraryBook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -100,7 +101,7 @@ public class OpenLibraryClient {
      * Recherche générique avec plusieurs critères
      * @param title Titre (optionnel)
      * @param author Auteur (optionnel)
-     * @param isbn ISBN (optionnel)
+     * @param isbn ISBN ou Work ID (optionnel)
      * @param limit Nombre max de résultats
      * @return Réponse OpenLibrary
      */
@@ -115,7 +116,15 @@ public class OpenLibraryClient {
                 urlBuilder.append("&author=").append(encodeParam(author));
             }
             if (isbn != null && !isbn.isBlank()) {
-                urlBuilder.append("&isbn=").append(encodeParam(isbn));
+                // Support both ISBN and Work ID patterns
+                if (isbn.matches("^OL\\d+[WM]$")) {
+                    // C'est un Work ID (OL82586W) ou Edition ID (OL12345M) - chercher par work
+                    urlBuilder = new StringBuilder(baseUrl.replace("/search.json", ""));
+                    urlBuilder.append("/works/").append(isbn).append(".json");
+                } else {
+                    // C'est un ISBN
+                    urlBuilder.append("&isbn=").append(encodeParam(isbn));
+                }
             }
             
             logger.info("Searching OpenLibrary with: title={}, author={}, isbn={}", title, author, isbn);
@@ -130,10 +139,54 @@ public class OpenLibraryClient {
             return null;
         }
     }
-    
+
     /**
      * Encode un paramètre pour l'URL (encodage URL standard)
      */
+    /**
+     * Recherche les éditions d'un work OpenLibrary par Work ID
+     * @param workId Work ID (ex: OL5819895W)
+     * @return Réponse OpenLibrary avec éditions
+     */
+    public OpenLibrarySearchResponse searchEditionsByWorkId(String workId) {
+        try {
+            // Format: /works/OL5819895W/editions.json retourne les éditions du work
+            String url = baseUrl.replace("/search.json", "") + "/works/" + workId + "/editions.json";
+            logger.info("Searching OpenLibrary editions for work ID: {}", workId);
+            
+            return restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(OpenLibrarySearchResponse.class);
+                    
+        } catch (RestClientException e) {
+            logger.error("OpenLibrary API error for work ID {}: {}", workId, e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Récupère les données du work directement depuis OpenLibrary
+     * @param workId OpenLibrary Work ID (ex: OL5819895W)
+     * @return Données du work ou null si erreur
+     */
+    public OpenLibraryBook fetchWorkById(String workId) {
+        try {
+            // Format: /works/OL5819895W.json retourne les données du work
+            String url = baseUrl.replace("/search.json", "") + "/works/" + workId + ".json";
+            logger.info("Fetching OpenLibrary work data for ID: {}", workId);
+            
+            return restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(OpenLibraryBook.class);
+                    
+        } catch (RestClientException e) {
+            logger.error("OpenLibrary API error fetching work {}: {}", workId, e.getMessage());
+            return null;
+        }
+    }
+
     private String encodeParam(String param) {
         try {
             return URLEncoder.encode(param, StandardCharsets.UTF_8.toString());
