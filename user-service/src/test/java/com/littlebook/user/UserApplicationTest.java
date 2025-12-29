@@ -24,4 +24,5 @@ class UserApplicationTest {
     void mainRunsWithoutThrowing() {
         Assertions.assertDoesNotThrow(() -> UserApplication.main(new String[0]));
     }
+
 }

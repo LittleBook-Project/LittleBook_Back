@@ -146,4 +146,3 @@ services:
     networks:
       - littlebook-network
     restart: unless-stopped
-
