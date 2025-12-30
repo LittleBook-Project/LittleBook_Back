@@ -17,7 +17,7 @@ public class UserClient {
     private final String baseUrl;
 
     public UserClient(RestTemplate restTemplate,
-                      @Value("${app.user-service.url:http://localhost:8082}") String baseUrl) {
+                      @Value("${app.user-service.url:http://user-service:8082}") String baseUrl) {
         this.restTemplate = restTemplate;
         this.baseUrl = baseUrl;
     }

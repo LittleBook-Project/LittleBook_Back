@@ -22,7 +22,7 @@ public class UserServiceClient {
 
     public UserServiceClient(
             WebClient.Builder webClientBuilder,
-            @Value("${app.user-service.url:http://localhost:8082}") String userServiceUrl
+            @Value("${app.user-service.url:http://user-service:8082}") String userServiceUrl
     ) {
         this.webClient = webClientBuilder.baseUrl(userServiceUrl).build();
     }

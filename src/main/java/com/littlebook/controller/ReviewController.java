@@ -100,6 +100,16 @@ public class ReviewController {
     }
 
     /**
+     * Récupère toutes les reviews (endpoint global, utile pour debug)
+     * GET /api/reviews
+     */
+    @GetMapping
+    public ResponseEntity<List<ReviewDTO>> getAllReviews() {
+        List<ReviewEntity> reviews = reviewService.getAllReviews();
+        return ResponseEntity.ok(reviews.stream().map(this::toDTO).toList());
+    }
+
+    /**
      * Récupère toutes les reviews d'un utilisateur
      * GET /api/reviews/user/{userUuid}
      */
