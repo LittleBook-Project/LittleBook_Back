@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,6 +24,7 @@ public class FirebaseConfig {
   private String projectId;
 
   @Bean
+  @ConditionalOnMissingBean
   public FirebaseApp firebaseApp() throws IOException {
     if (FirebaseApp.getApps().isEmpty()) {
       var optsBuilder = FirebaseOptions.builder();
@@ -47,6 +49,7 @@ public class FirebaseConfig {
   }
 
   @Bean
+  @ConditionalOnMissingBean
   public FirebaseAuth firebaseAuth(FirebaseApp firebaseApp) {
     // Bean injecté (et mockable en test)
     return FirebaseAuth.getInstance(firebaseApp);

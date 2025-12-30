@@ -21,6 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.firebase.project-id=test-project"
 })
 @AutoConfigureMockMvc
+@org.springframework.boot.test.mock.mockito.MockBean(com.google.firebase.FirebaseApp.class)
+@org.springframework.boot.test.mock.mockito.MockBean(com.google.firebase.auth.FirebaseAuth.class)
 public class CorsPreflightTest {
 
     @Autowired
