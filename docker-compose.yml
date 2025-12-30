@@ -21,11 +21,15 @@ services:
       - FIREBASE_PROJECT_ID=littlebook-b2d2d
       - SPRING_PROFILES_ACTIVE=dev
       - SERVER_PORT=8081
+      - USER_SERVICE_URL=http://user-service:8082
+      - ADMIN_SERVICE_URL=http://admin-service:8085
     volumes:
       - ./littlebook.json:/app/littlebook.json:ro
     networks:
       - littlebook-network
-
+    depends_on:
+      - user-service
+      - admin-service
     restart: unless-stopped
 
   # ========================================
@@ -92,8 +96,11 @@ services:
     environment:
       - SERVER_PORT=8085
       - SPRING_PROFILES_ACTIVE=dev
+      - USER_SERVICE_URL=http://user-service:8082
     networks:
       - littlebook-network
+    depends_on:
+      - user-service
     restart: unless-stopped
 
   # ========================================
@@ -117,5 +124,4 @@ services:
       - book-service
       - admin-service
     restart: unless-stopped
-
 

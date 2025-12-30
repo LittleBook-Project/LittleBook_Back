@@ -4,6 +4,10 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import com.littlebook.auth.client.AdminServiceClient;
+import com.littlebook.auth.client.UserServiceClient;
+import com.littlebook.auth.dto.UserResponse;
+import com.littlebook.auth.enums.AuthProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,6 +45,12 @@ class SecurityIntegrationTest {
     @MockBean
     private FirebaseAuth firebaseAuth;
 
+    @MockBean
+    private UserServiceClient userServiceClient;
+
+    @MockBean
+    private AdminServiceClient adminServiceClient;
+
     @Test
     void public_ping_is_open() throws Exception {
         mvc.perform(get("/api/public/ping"))
@@ -61,6 +71,13 @@ class SecurityIntegrationTest {
         when(token.getEmail()).thenReturn("john@doe.com");
         when(token.getName()).thenReturn("John Doe");
         when(token.getPicture()).thenReturn("https://pic.example/avatar.png");
+
+        when(userServiceClient.syncUser(any())).thenReturn(java.util.Optional.of(
+            new UserResponse(java.util.UUID.fromString("00000000-0000-0000-0000-000000000999"),
+                "john@doe.com", "John Doe", "https://pic.example/avatar.png",
+                AuthProvider.GOOGLE, "uid123", true, "ROLE_USER",
+                null, null, null, true)
+        ));
 
         // Le filtre doit utiliser ce mock injecté
         when(firebaseAuth.verifyIdToken("good")).thenReturn(token);
@@ -97,6 +114,13 @@ class SecurityIntegrationTest {
         // Ajouter la claim firebase.sign_in_provider = "microsoft.com"
         when(token.getClaims()).thenReturn(Map.of("firebase", Map.of("sign_in_provider", "microsoft.com")));
 
+        when(userServiceClient.syncUser(any())).thenReturn(java.util.Optional.of(
+            new UserResponse(java.util.UUID.fromString("00000000-0000-0000-0000-000000000111"),
+                "msuser@contoso.com", null, null,
+                AuthProvider.MICROSOFT, "ms-uid-1", false, "ROLE_USER",
+                null, null, null, true)
+        ));
+
         when(firebaseAuth.verifyIdToken("good-ms")).thenReturn(token);
 
         mvc.perform(get("/api/auth/me").header("Authorization", "Bearer good-ms"))
@@ -117,6 +141,8 @@ class SecurityIntegrationTest {
         when(token.isEmailVerified()).thenReturn(true);
 
         when(token.getClaims()).thenReturn(Map.of("firebase", Map.of("sign_in_provider", "github.com")));
+
+        when(userServiceClient.syncUser(any())).thenReturn(java.util.Optional.empty());
 
         when(firebaseAuth.verifyIdToken("bad-gh")).thenReturn(token);
 
