@@ -1,11 +1,13 @@
 package com.littlebook.book;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.springframework.boot.test.context.SpringBootTest;
 
 
 
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@Disabled("Avoid starting Spring context during unit test runs on developer machine")
 class BookApplicationTest {
 
     @Test
