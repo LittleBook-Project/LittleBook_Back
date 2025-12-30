@@ -62,6 +62,15 @@ public class ReviewService {
     // --------- CREATE ---------
 
     public ReviewEntity create(ReviewEntity r) {
+        // Basic validation: rating and required identifiers
+        if (r == null) {
+            throw new IllegalArgumentException("Review must not be null");
+        }
+
+        if (r.getBookIsbn() == null || r.getBookIsbn().isBlank() || r.getUserUuid() == null || r.getUserUuid().isBlank()) {
+            throw new IllegalArgumentException("bookIsbn and userUuid are required");
+        }
+
         if (r.getRating() == null || r.getRating() < 1 || r.getRating() > 5) {
             throw new IllegalArgumentException("Rating must be between 1 and 5");
         }
