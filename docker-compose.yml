@@ -83,6 +83,8 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - littlebook-network
+    volumes:
+      - ./dev-data/book-service:/data
     restart: unless-stopped
 
   # ========================================
@@ -125,5 +127,23 @@ services:
       - review-service
       - book-service
       - admin-service
+      - recommendation-service
+    restart: unless-stopped
+
+  # ========================================
+  # 🔮 SERVICE RECOMMANDATIONS
+  # ========================================
+  recommendation-service:
+    build:
+      context: .
+      dockerfile: recommendation-service/Dockerfile
+    container_name: littlebook_recommendation
+    ports:
+      - "8086:8086"
+    environment:
+      - SERVER_PORT=8086
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - littlebook-network
     restart: unless-stopped
 
