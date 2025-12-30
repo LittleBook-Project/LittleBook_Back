@@ -70,6 +70,14 @@ public class ReviewService {
             r.setReviewCreationDate(LocalDate.now());
         }
 
+        // Prevent a user from creating more than one review for the same book
+        if (r.getUserUuid() != null && r.getBookIsbn() != null) {
+            boolean already = repo.existsByUserUuidAndBookIsbn(r.getUserUuid(), r.getBookIsbn());
+            if (already) {
+                throw new IllegalArgumentException("User has already submitted a review for this book");
+            }
+        }
+
         return repo.save(r);
     }
 

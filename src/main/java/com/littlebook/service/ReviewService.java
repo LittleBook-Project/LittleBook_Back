@@ -153,4 +153,11 @@ public class ReviewService {
     public Optional<ReviewEntity> getReviewById(Long reviewId) {
         return reviewRepository.findById(reviewId);
     }
+
+    /**
+     * Récupère toutes les reviews (utilitaire - pour debug / admin)
+     */
+    public List<ReviewEntity> getAllReviews() {
+        return reviewRepository.findAll();
+    }
 }

@@ -47,6 +47,8 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - littlebook-network
+    volumes:
+      - ./dev-data/user-service:/data
     restart: unless-stopped
 
   # ========================================

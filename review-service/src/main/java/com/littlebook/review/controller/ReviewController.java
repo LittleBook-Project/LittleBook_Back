@@ -36,7 +36,7 @@ public class ReviewController {
     // --- CRUD ---
 
     @PostMapping
-    public ResponseEntity<ReviewResponse> create(@RequestBody ReviewRequest req) {
+    public ResponseEntity<?> create(@RequestBody ReviewRequest req) {
         ReviewEntity entity = mapToEntity(req);
         // on ne fait pas confiance au client pour l'id / date
         entity.setId(null);
@@ -44,10 +44,14 @@ public class ReviewController {
             entity.setReviewCreationDate(LocalDate.now());
         }
 
-        ReviewEntity saved = service.create(entity);
-        return ResponseEntity
-                .created(URI.create("/review/" + saved.getId()))
-                .body(mapToResponse(saved));
+        try {
+            ReviewEntity saved = service.create(entity);
+            return ResponseEntity
+                    .created(URI.create("/review/" + saved.getId()))
+                    .body(mapToResponse(saved));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(409).body(java.util.Map.of("error", ex.getMessage()));
+        }
     }
 
     @GetMapping("/{id}")
@@ -88,6 +92,18 @@ public class ReviewController {
     @GetMapping("/book/{isbn}")
     public List<ReviewResponse> getByBook(@PathVariable("isbn") String bookIsbn) {
         return service.getByBookIsbn(bookIsbn)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    /**
+     * Récupère toutes les reviews (utile pour debug/dev)
+     * GET /api/review
+     */
+    @GetMapping
+    public List<ReviewResponse> getAll() {
+        return service.findAll()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();

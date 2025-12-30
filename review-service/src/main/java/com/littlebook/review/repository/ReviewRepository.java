@@ -14,6 +14,8 @@ public interface ReviewRepository extends JpaRepository<ReviewEntity, Long> {
 
     List<ReviewEntity> findByUserUuid(String userUuid);
 
+    boolean existsByUserUuidAndBookIsbn(String userUuid, String bookIsbn);
+
     @Query("SELECT AVG(r.rating) FROM ReviewEntity r WHERE r.bookIsbn = :isbn")
     Double getAverageRatingByBookIsbn(String isbn);
 
