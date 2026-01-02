@@ -10,4 +10,3 @@ class ReviewApplicationTests {
         // Si ça passe, le contexte Spring démarre correctement.
     }
 }
-
