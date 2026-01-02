@@ -87,24 +87,35 @@ jobs:
           JACOCO_XML="${SERVICE}/target/site/jacoco/jacoco.xml"
           
           if [ -f "$JACOCO_XML" ]; then
-            # Extract coverage metrics from JaCoCo XML
-            LINE_COVERAGE=$(xmllint --xpath '//counter[@type="LINE"]/@covered' "$JACOCO_XML" 2>/dev/null | grep -oP '(?<=covered=")[^"]*' | head -1)
-            LINE_TOTAL=$(xmllint --xpath '//counter[@type="LINE"]/@missed' "$JACOCO_XML" 2>/dev/null | grep -oP '(?<=missed=")[^"]*' | head -1)
-            BRANCH_COVERAGE=$(xmllint --xpath '//counter[@type="BRANCH"]/@covered' "$JACOCO_XML" 2>/dev/null | grep -oP '(?<=covered=")[^"]*' | head -1)
-            
-            if [ ! -z "$LINE_COVERAGE" ] && [ ! -z "$LINE_TOTAL" ]; then
-              TOTAL_LINES=$((LINE_COVERAGE + LINE_TOTAL))
-              COVERAGE_PCT=$((100 * LINE_COVERAGE / TOTAL_LINES))
-              echo "### 📊 Code Coverage - $SERVICE" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
-              echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-              echo "| Line Coverage | ${COVERAGE_PCT}% ($LINE_COVERAGE/$TOTAL_LINES lines) |" >> $GITHUB_STEP_SUMMARY
-              if [ ! -z "$BRANCH_COVERAGE" ]; then
-                echo "| Branch Coverage | $BRANCH_COVERAGE branches |" >> $GITHUB_STEP_SUMMARY
-              fi
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
+            python3 << 'EOF'
+          import xml.etree.ElementTree as ET
+          import os
+          
+          service = "${{ matrix.service }}"
+          jacoco_file = f"{service}/target/site/jacoco/jacoco.xml"
+          
+          if os.path.exists(jacoco_file):
+              tree = ET.parse(jacoco_file)
+              root = tree.getroot()
+              
+              # Extract line coverage
+              for counter in root.findall('.//counter[@type="LINE"]'):
+                  covered = int(counter.get('covered', 0))
+                  missed = int(counter.get('missed', 0))
+                  total = covered + missed
+                  
+                  if total > 0:
+                      coverage_pct = int((covered / total) * 100)
+                      
+                      with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+                          f.write(f"### 📊 Code Coverage - {service}\n\n")
+                          f.write(f"| Metric | Value |\n")
+                          f.write(f"|--------|-------|\n")
+                          f.write(f"| Line Coverage | **{coverage_pct}%** ({covered}/{total} lines) |\n")
+                      
+                      print(f"✅ {service}: {coverage_pct}% line coverage")
+                      break
+          EOF
           fi
 
   # Job 2: Docker Build and Push
