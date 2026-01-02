@@ -79,45 +79,6 @@ jobs:
           name: codecov-${{ matrix.service }}
           fail_ci_if_error: false
 
-      - name: Generate Coverage Summary
-        if: always()
-        continue-on-error: true
-        run: |
-          SERVICE="${{ matrix.service }}"
-          JACOCO_XML="${SERVICE}/target/site/jacoco/jacoco.xml"
-          
-          if [ -f "$JACOCO_XML" ]; then
-            python3 << 'EOF'
-          import xml.etree.ElementTree as ET
-          import os
-          
-          service = "${{ matrix.service }}"
-          jacoco_file = f"{service}/target/site/jacoco/jacoco.xml"
-          
-          if os.path.exists(jacoco_file):
-              tree = ET.parse(jacoco_file)
-              root = tree.getroot()
-              
-              # Extract line coverage
-              for counter in root.findall('.//counter[@type="LINE"]'):
-                  covered = int(counter.get('covered', 0))
-                  missed = int(counter.get('missed', 0))
-                  total = covered + missed
-                  
-                  if total > 0:
-                      coverage_pct = int((covered / total) * 100)
-                      
-                      with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
-                          f.write(f"### 📊 Code Coverage - {service}\n\n")
-                          f.write(f"| Metric | Value |\n")
-                          f.write(f"|--------|-------|\n")
-                          f.write(f"| Line Coverage | **{coverage_pct}%** ({covered}/{total} lines) |\n")
-                      
-                      print(f"✅ {service}: {coverage_pct}% line coverage")
-                      break
-          EOF
-          fi
-
   # Job 2: Docker Build and Push
   build-and-push:
     needs: quality-checks
@@ -224,9 +185,23 @@ jobs:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy-${{ matrix.service }}'
 
+  # Job 3.5: Coverage Summary
+  coverage-summary:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate Global Coverage Report
+        continue-on-error: true
+        run: python3 .github/scripts/generate_coverage_report.py
+
   # Job 4: Notification
   notify:
-    needs: [quality-checks, build-and-push]
+    needs: [quality-checks, build-and-push, coverage-summary]
     runs-on: ubuntu-latest
     if: always()
     
