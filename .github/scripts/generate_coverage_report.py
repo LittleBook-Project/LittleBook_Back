@@ -35,14 +35,16 @@ def get_coverage_percentage(jacoco_xml_path):
         tree = ET.parse(jacoco_xml_path)
         root = tree.getroot()
         
-        # Find LINE counter
-        for counter in root.findall('.//counter[@type="LINE"]'):
+        # Get counters directly under <report> tag (global stats)
+        # Not from packages or classes
+        for counter in root.findall('./counter[@type="LINE"]'):
             covered = int(counter.get('covered', 0))
             missed = int(counter.get('missed', 0))
             total = covered + missed
             
             if total > 0:
-                coverage_pct = int((covered / total) * 100)
+                coverage_pct = round((covered / total) * 100, 1)
+                print(f"DEBUG: Parsing {jacoco_xml_path} - covered={covered}, missed={missed}, total={total}")
                 return (coverage_pct, covered, total)
         
         return None
@@ -94,7 +96,7 @@ def generate_report():
                 emoji, status_text = get_status_emoji(coverage_pct)
                 
                 f.write(f"| {service} | **{coverage_pct}%** ({covered}/{total}) | {emoji} {status_text} |\n")
-                print(f"✅ {service}: {coverage_pct}% coverage")
+                print(f"✅ {service}: {coverage_pct}% coverage ({covered}/{total} lines)")
                 
                 total_coverage += coverage_pct
                 valid_services += 1
