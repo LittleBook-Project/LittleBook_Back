@@ -79,6 +79,14 @@ jobs:
           name: codecov-${{ matrix.service }}
           fail_ci_if_error: false
 
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.service }}
+          path: ${{ matrix.service }}/target/site/jacoco/jacoco.xml
+          retention-days: 1
+
   # Job 2: Docker Build and Push
   build-and-push:
     needs: quality-checks
@@ -194,6 +202,37 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: false
+      
+      - name: Restore coverage files structure
+        run: |
+          mkdir -p admin-service/target/site/jacoco
+          mkdir -p auth-service/target/site/jacoco
+          mkdir -p user-service/target/site/jacoco
+          mkdir -p review-service/target/site/jacoco
+          mkdir -p book-service/target/site/jacoco
+          
+          # Move artifacts to correct locations
+          if [ -d "coverage-admin-service" ]; then
+            mv coverage-admin-service/jacoco.xml admin-service/target/site/jacoco/
+          fi
+          if [ -d "coverage-auth-service" ]; then
+            mv coverage-auth-service/jacoco.xml auth-service/target/site/jacoco/
+          fi
+          if [ -d "coverage-user-service" ]; then
+            mv coverage-user-service/jacoco.xml user-service/target/site/jacoco/
+          fi
+          if [ -d "coverage-review-service" ]; then
+            mv coverage-review-service/jacoco.xml review-service/target/site/jacoco/
+          fi
+          if [ -d "coverage-book-service" ]; then
+            mv coverage-book-service/jacoco.xml book-service/target/site/jacoco/
+          fi
       
       - name: Generate Global Coverage Report
         continue-on-error: true
