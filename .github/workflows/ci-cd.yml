@@ -126,9 +126,9 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=sha,prefix={{branch}}-,format=short
+            type=sha,prefix=${{ github.ref_name }}-,format=short
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=dev,enable={{is_push}},event=branch,value=dev
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }},event=branch
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
