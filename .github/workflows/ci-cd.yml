@@ -79,6 +79,34 @@ jobs:
           name: codecov-${{ matrix.service }}
           fail_ci_if_error: false
 
+      - name: Generate Coverage Summary
+        if: always()
+        continue-on-error: true
+        run: |
+          SERVICE="${{ matrix.service }}"
+          JACOCO_XML="${SERVICE}/target/site/jacoco/jacoco.xml"
+          
+          if [ -f "$JACOCO_XML" ]; then
+            # Extract coverage metrics from JaCoCo XML
+            LINE_COVERAGE=$(xmllint --xpath '//counter[@type="LINE"]/@covered' "$JACOCO_XML" 2>/dev/null | grep -oP '(?<=covered=")[^"]*' | head -1)
+            LINE_TOTAL=$(xmllint --xpath '//counter[@type="LINE"]/@missed' "$JACOCO_XML" 2>/dev/null | grep -oP '(?<=missed=")[^"]*' | head -1)
+            BRANCH_COVERAGE=$(xmllint --xpath '//counter[@type="BRANCH"]/@covered' "$JACOCO_XML" 2>/dev/null | grep -oP '(?<=covered=")[^"]*' | head -1)
+            
+            if [ ! -z "$LINE_COVERAGE" ] && [ ! -z "$LINE_TOTAL" ]; then
+              TOTAL_LINES=$((LINE_COVERAGE + LINE_TOTAL))
+              COVERAGE_PCT=$((100 * LINE_COVERAGE / TOTAL_LINES))
+              echo "### 📊 Code Coverage - $SERVICE" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+              echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Line Coverage | ${COVERAGE_PCT}% ($LINE_COVERAGE/$TOTAL_LINES lines) |" >> $GITHUB_STEP_SUMMARY
+              if [ ! -z "$BRANCH_COVERAGE" ]; then
+                echo "| Branch Coverage | $BRANCH_COVERAGE branches |" >> $GITHUB_STEP_SUMMARY
+              fi
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
   # Job 2: Docker Build and Push
   build-and-push:
     needs: quality-checks
