@@ -35,6 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class SecurityIntegrationTest {
 
+    @org.springframework.context.annotation.Import(com.littlebook.auth.config.AuthTestConfig.class)
+
     @Autowired
     private MockMvc mvc;
 
