@@ -150,10 +150,42 @@ public class BookController {
     public Page<BookResponse> list(@RequestParam(required = false) String q,
                                    @RequestParam(required = false) String isbn,
                                    @RequestParam(name = "olId", required = false) String openlibraryId,
+                                   @RequestParam(required = false) String author,
+                                   @RequestParam(required = false) String subjects,
+                                   @RequestParam(required = false) Integer minYear,
+                                   @RequestParam(required = false) Integer maxYear,
                                    @RequestParam(defaultValue = "0") int page,
-                                   @RequestParam(defaultValue = "20") int size) {
-        var pageable = PageRequest.of(page, Math.min(size, 100), Sort.by(Sort.Direction.DESC, "updatedAt"));
-        return service.list(q, isbn, openlibraryId, pageable).map(this::mapToResponse);
+                                   @RequestParam(defaultValue = "20") int size,
+                                   @RequestParam(defaultValue = "updatedAt") String sort,
+                                   @RequestParam(defaultValue = "desc") String dir,
+                                   @RequestParam(defaultValue = "local") String source) {
+        // Build pageable with requested sort
+        Sort.Direction direction = "asc".equalsIgnoreCase(dir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        var pageable = PageRequest.of(page, Math.min(size, 200), Sort.by(direction, sort));
+
+        // If free-text q provided, prefer local results first (unless source=openlibrary)
+        if (q != null && !q.isBlank() && !"openlibrary".equalsIgnoreCase(source)) {
+            var local = service.searchLocal(q, pageable);
+            if (local != null && local.hasContent()) {
+                return local.map(this::mapToResponse);
+            }
+            if ("local" .equalsIgnoreCase(source)) {
+                // client requested local only
+                return new org.springframework.data.domain.PageImpl<>(new java.util.ArrayList<>(), pageable, 0);
+            }
+            // else fall through to OpenLibrary suggestions
+            return syncService.searchOpenLibraryOnly(q, author, pageable).map(this::mapToResponse);
+        }
+
+        // If source explicitly asks OpenLibrary only
+        if ("openlibrary".equalsIgnoreCase(source) && q != null && !q.isBlank()) {
+            return syncService.searchOpenLibraryOnly(q, author, pageable).map(this::mapToResponse);
+        }
+
+        // For other filters we delegate to service.list which now supports dynamic specs
+        var pageResult = service.list(q, isbn, openlibraryId, author, subjects, minYear, maxYear, pageable);
+
+        return pageResult.map(this::mapToResponse);
     }
 
     // --- OpenLibrary Search & Sync ---

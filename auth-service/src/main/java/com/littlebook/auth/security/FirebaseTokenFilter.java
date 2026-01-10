@@ -3,6 +3,12 @@ package com.littlebook.auth.security;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import com.littlebook.auth.client.AdminServiceClient;
+import com.littlebook.auth.client.UserServiceClient;
+import com.littlebook.auth.dto.CreateUserRequest;
+import com.littlebook.auth.dto.LoginRecordRequest;
+import com.littlebook.auth.dto.UserResponse;
+import com.littlebook.auth.enums.AuthProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,18 +26,27 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Component
 public class FirebaseTokenFilter extends OncePerRequestFilter {
 
     private final FirebaseAuth firebaseAuth;
+    private final UserServiceClient userServiceClient;
+    private final AdminServiceClient adminServiceClient;
     private static final Logger log = LoggerFactory.getLogger(FirebaseTokenFilter.class);
 
     // Fournisseurs autorisés - accepter les connexions fédérées Google et Microsoft
     private static final Set<String> ALLOWED_PROVIDERS = Set.of("google.com", "microsoft.com");
 
-    public FirebaseTokenFilter(FirebaseAuth firebaseAuth) {
+    public FirebaseTokenFilter(FirebaseAuth firebaseAuth,
+                               UserServiceClient userServiceClient,
+                               AdminServiceClient adminServiceClient) {
         this.firebaseAuth = firebaseAuth;
+        this.userServiceClient = userServiceClient;
+        this.adminServiceClient = adminServiceClient;
     }
 
     @Override
@@ -94,6 +109,9 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
                 log.warn("Microsoft login with unverified email for {} - accepting authentication", email);
             }
 
+            // Synchroniser l'utilisateur avec user-service (création ou mise à jour last_login)
+            syncUserWithUserService(decoded, provider, req);
+
             var authentication = new UsernamePasswordAuthenticationToken(
                     decoded.getUid(),
                     null,
@@ -120,5 +138,55 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
 
         // Toujours poursuivre la chaîne
         chain.doFilter(req, res);
+    }
+
+    /**
+     * Synchronise l'utilisateur avec user-service pour créer ou mettre à jour last_login
+     */
+    private void syncUserWithUserService(FirebaseToken token, String provider, HttpServletRequest httpReq) {
+        try {
+            // Mapper le provider Firebase vers notre enum
+            AuthProvider authProvider = mapProvider(provider);
+            
+            CreateUserRequest request = new CreateUserRequest(
+                    authProvider,
+                    token.getUid(),
+                    token.getEmail(),
+                    token.getName(),
+                    token.getPicture(),
+                    token.isEmailVerified()
+            );
+            
+            Optional<UserResponse> user = userServiceClient.syncUser(request);
+
+            // Enregistrer l'événement de login dans admin-service si l'identifiant est disponible
+            if (user.isPresent() && user.get().id() != null) {
+                UUID userId = user.get().id();
+                LoginRecordRequest logReq = new LoginRecordRequest(
+                        provider,
+                        httpReq.getRemoteAddr(),
+                        httpReq.getHeader("User-Agent"),
+                        LocalDateTime.now()
+                );
+                adminServiceClient.recordLogin(userId, logReq);
+            }
+        } catch (Exception e) {
+            // Ne pas bloquer l'authentification si la synchro échoue
+            log.error("Error syncing user with user-service: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Mapper le provider Firebase (google.com, microsoft.com) vers notre enum AuthProvider
+     */
+    private AuthProvider mapProvider(String firebaseProvider) {
+        if (firebaseProvider == null) {
+            return AuthProvider.LOCAL;
+        }
+        return switch (firebaseProvider) {
+            case "google.com" -> AuthProvider.GOOGLE;
+            case "microsoft.com" -> AuthProvider.MICROSOFT;
+            default -> AuthProvider.LOCAL;
+        };
     }
 }

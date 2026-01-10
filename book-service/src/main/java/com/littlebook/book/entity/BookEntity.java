@@ -48,6 +48,7 @@ public class BookEntity {
     @Column(name = "description")
     private String description;
 
+    @Lob
     @Column(name = "subjects")
     private String subjects;
 

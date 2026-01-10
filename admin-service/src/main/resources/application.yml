@@ -21,7 +21,6 @@ spring:
     show-sql: true
     defer-datasource-initialization: true
 
-
   # Enable H2 console for local dev
   h2:
     console:

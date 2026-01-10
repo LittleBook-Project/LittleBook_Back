@@ -24,6 +24,8 @@ jobs:
       contents: read
       packages: read
       pull-requests: write
+      checks: write
+      statuses: write
     
     strategy:
       matrix:
@@ -77,6 +79,14 @@ jobs:
           name: codecov-${{ matrix.service }}
           fail_ci_if_error: false
 
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.service }}
+          path: ${{ matrix.service }}/target/site/jacoco/jacoco.xml
+          retention-days: 1
+
   # Job 2: Docker Build and Push
   build-and-push:
     needs: quality-checks
@@ -124,9 +134,9 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=sha,prefix={{branch}}-,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=dev,enable={{is_push}},event=branch,value=dev
+            type=sha,prefix=${{ github.ref_name }}-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }},event=branch
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -183,18 +193,68 @@ jobs:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy-${{ matrix.service }}'
 
+  # Job 3.5: Coverage Summary
+  coverage-summary:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: false
+      
+      - name: Restore coverage files structure
+        run: |
+          mkdir -p admin-service/target/site/jacoco
+          mkdir -p auth-service/target/site/jacoco
+          mkdir -p user-service/target/site/jacoco
+          mkdir -p review-service/target/site/jacoco
+          mkdir -p book-service/target/site/jacoco
+          
+          # Move artifacts to correct locations
+          if [ -d "coverage-admin-service" ]; then
+            mv coverage-admin-service/jacoco.xml admin-service/target/site/jacoco/
+          fi
+          if [ -d "coverage-auth-service" ]; then
+            mv coverage-auth-service/jacoco.xml auth-service/target/site/jacoco/
+          fi
+          if [ -d "coverage-user-service" ]; then
+            mv coverage-user-service/jacoco.xml user-service/target/site/jacoco/
+          fi
+          if [ -d "coverage-review-service" ]; then
+            mv coverage-review-service/jacoco.xml review-service/target/site/jacoco/
+          fi
+          if [ -d "coverage-book-service" ]; then
+            mv coverage-book-service/jacoco.xml book-service/target/site/jacoco/
+          fi
+      
+      - name: Generate Global Coverage Report
+        continue-on-error: true
+        run: python3 .github/scripts/generate_coverage_report.py
+
   # Job 4: Notification
   notify:
-    needs: [quality-checks, build-and-push]
+    needs: [quality-checks, build-and-push, coverage-summary]
     runs-on: ubuntu-latest
     if: always()
     
     steps:
       - name: Check build status
         run: |
-          if [ "${{ needs.quality-checks.result }}" == "failure" ] || [ "${{ needs.build-and-push.result }}" == "failure" ]; then
-            echo "❌ Pipeline failed"
+          if [ "${{ needs.quality-checks.result }}" == "failure" ]; then
+            echo "❌ Pipeline failed - quality-checks failed"
             exit 1
-          else
+          elif [ "${{ needs.build-and-push.result }}" == "failure" ]; then
+            echo "❌ Pipeline failed - build-and-push failed"
+            exit 1
+          elif [ "${{ needs.quality-checks.result }}" == "success" ]; then
             echo "✅ Pipeline succeeded"
+          else
+            echo "⚠️ Pipeline completed with status: quality-checks=${{ needs.quality-checks.result }}, build-and-push=${{ needs.build-and-push.result }}"
           fi

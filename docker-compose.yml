@@ -21,11 +21,15 @@ services:
       - FIREBASE_PROJECT_ID=littlebook-b2d2d
       - SPRING_PROFILES_ACTIVE=dev
       - SERVER_PORT=8081
+      - USER_SERVICE_URL=http://user-service:8082
+      - ADMIN_SERVICE_URL=http://admin-service:8085
     volumes:
       - ./littlebook.json:/app/littlebook.json:ro
     networks:
       - littlebook-network
-
+    depends_on:
+      - user-service
+      - admin-service
     restart: unless-stopped
 
   # ========================================
@@ -43,6 +47,8 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - littlebook-network
+    volumes:
+      - ./dev-data/user-service:/data
     restart: unless-stopped
 
   # ========================================
@@ -77,6 +83,8 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - littlebook-network
+    volumes:
+      - ./dev-data/book-service:/data
     restart: unless-stopped
 
   # ========================================
@@ -92,8 +100,11 @@ services:
     environment:
       - SERVER_PORT=8085
       - SPRING_PROFILES_ACTIVE=dev
+      - USER_SERVICE_URL=http://user-service:8082
     networks:
       - littlebook-network
+    depends_on:
+      - user-service
     restart: unless-stopped
 
   # ========================================
@@ -116,6 +127,23 @@ services:
       - review-service
       - book-service
       - admin-service
+      - recommendation-service
     restart: unless-stopped
 
+  # ========================================
+  # 🔮 SERVICE RECOMMANDATIONS
+  # ========================================
+  recommendation-service:
+    build:
+      context: .
+      dockerfile: recommendation-service/Dockerfile
+    container_name: littlebook_recommendation
+    ports:
+      - "8086:8086"
+    environment:
+      - SERVER_PORT=8086
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - littlebook-network
+    restart: unless-stopped
 

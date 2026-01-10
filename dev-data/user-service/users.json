@@ -1,0 +1,18 @@
+[
+  {
+    "provider": "GOOGLE",
+    "providerId": "google-123",
+    "email": "alice@example.com",
+    "name": "Alice Example",
+    "picture": "https://example.com/alice.png",
+    "emailVerified": true
+  },
+  {
+    "provider": "MICROSOFT",
+    "providerId": "ms-456",
+    "email": "bob@example.com",
+    "name": "Bob Example",
+    "picture": "https://example.com/bob.png",
+    "emailVerified": true
+  }
+]

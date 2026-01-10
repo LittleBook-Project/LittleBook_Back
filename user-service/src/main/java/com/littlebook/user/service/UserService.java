@@ -94,4 +94,9 @@ public class UserService {
             userRepository.save(u);
         });
     }
+
+    // Return all users (used by admin export endpoints / startup snapshots)
+    public java.util.List<User> findAll() {
+        return userRepository.findAll();
+    }
 }

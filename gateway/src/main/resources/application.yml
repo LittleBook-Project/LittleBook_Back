@@ -28,7 +28,20 @@ spring:
           predicates:
             - Path=/api/review/**
           filters:
-            - RewritePath=/api/review/(?<segment>.*), /$\{segment}
+            - RewritePath=/api/review(.*), /api/review$1
+
+        - id: review-service-plural
+          uri: http://review-service:8083
+          predicates:
+            - Path=/api/reviews/**
+          filters:
+            - RewritePath=/api/reviews(.*), /api/review$1
+        - id: recommendation-service
+          uri: http://recommendation-service:8086
+          predicates:
+            - Path=/api/recommendations/**
+          filters:
+            - RewritePath=/api/recommendations(.*), /api/recommendations$1
         
         - id: book-service
           uri: http://book-service:8084
