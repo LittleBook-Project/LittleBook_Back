@@ -3,8 +3,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class UserApplicationTest {
 
     @Test
@@ -22,6 +23,7 @@ class UserApplicationTest {
 
     @Test
     void mainRunsWithoutThrowing() {
-        Assertions.assertDoesNotThrow(() -> UserApplication.main(new String[0]));
+        // start with server.port=0 to avoid binding to a fixed port during tests
+        Assertions.assertDoesNotThrow(() -> UserApplication.main(new String[]{"--server.port=0"}));
     }
 }

@@ -5,7 +5,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 
 
-@SpringBootTest
+@org.springframework.boot.test.context.SpringBootTest(webEnvironment = org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT)
 class BookApplicationTest {
 
     @Test
@@ -15,8 +15,8 @@ class BookApplicationTest {
 
     @Test 
     void main() {
-        // Test the main method by calling it with null args
-        BookApplication.main(new String[]{});
+        // Test the main method but avoid binding to the default port by using server.port=0
+        BookApplication.main(new String[]{"--server.port=0"});
     }
 
 }

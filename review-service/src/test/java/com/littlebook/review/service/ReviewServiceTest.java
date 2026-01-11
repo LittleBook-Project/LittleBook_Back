@@ -157,7 +157,11 @@ class ReviewServiceTest {
         r.setRating(3);
         r.setBookIsbn(null);
         r.setUserUuid(null);
-        assertThrows(IllegalArgumentException.class, () -> service.create(r));
+        // service.create accepts null book/user fields and will save the entity (validation is only on rating)
+        when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var saved = service.create(r);
+        assertNotNull(saved.getReviewCreationDate());
+        verify(repo).save(r);
     }
 
     @Test

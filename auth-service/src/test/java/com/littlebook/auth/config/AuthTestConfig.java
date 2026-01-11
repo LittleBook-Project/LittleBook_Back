@@ -1,5 +1,6 @@
 package com.littlebook.auth.config;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.littlebook.auth.client.AdminServiceClient;
 import com.littlebook.auth.client.UserServiceClient;
@@ -21,6 +22,21 @@ public class AuthTestConfig {
     @Bean
     public FirebaseAuth firebaseAuth() {
         return mock(FirebaseAuth.class);
+    }
+
+    @Bean
+    public FirebaseApp firebaseApp() {
+        return mock(FirebaseApp.class);
+    }
+
+    @Bean
+    public UserServiceClient userServiceClient() {
+        return mock(UserServiceClient.class);
+    }
+
+    @Bean
+    public AdminServiceClient adminServiceClient() {
+        return mock(AdminServiceClient.class);
     }
 
     @Bean

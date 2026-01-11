@@ -69,13 +69,13 @@ class BookServiceFullTest {
         List<BookEntity> list = Arrays.asList(sampleBook(UUID.randomUUID()));
         Page<BookEntity> page = new PageImpl<>(list);
         Pageable p = PageRequest.of(0, 10);
-        when(repo.findAll(p)).thenReturn(page);
+    when(repo.findAll((org.springframework.data.jpa.domain.Specification<com.littlebook.book.entity.BookEntity>) any(), any(Pageable.class))).thenReturn(page);
 
-        Page<BookEntity> res = service.list(null, null, null, p);
+    Page<BookEntity> res = service.list(null, null, null, null, null, null, null, p);
 
         assertNotNull(res);
         assertEquals(1, res.getTotalElements());
-        verify(repo).findAll(p);
+    verify(repo).findAll((org.springframework.data.jpa.domain.Specification<com.littlebook.book.entity.BookEntity>) any(), eq(p));
     }
 
     @Test

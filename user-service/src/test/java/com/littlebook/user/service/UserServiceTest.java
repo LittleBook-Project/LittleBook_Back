@@ -74,12 +74,14 @@ class UserServiceTest {
 
     @Test
     void getOrCreateFromOAuth_updatesExistingByProvider() {
-        CreateUserRequest req = mock(CreateUserRequest.class);
-        when(req.provider()).thenReturn(AuthProvider.GOOGLE);
-        when(req.providerId()).thenReturn("prov-1");
-        when(req.name()).thenReturn("New Name");
-        when(req.picture()).thenReturn("pic-url");
-        when(req.emailVerified()).thenReturn(true);
+    CreateUserRequest req = new CreateUserRequest(
+        AuthProvider.GOOGLE,
+        "prov-1",
+        null,
+        "New Name",
+        "pic-url",
+        true
+    );
 
         User existing = new User();
         existing.setName("Old");
@@ -102,13 +104,14 @@ class UserServiceTest {
 
     @Test
     void getOrCreateFromOAuth_linksByEmailWhenProviderMissing() {
-        CreateUserRequest req = mock(CreateUserRequest.class);
-        when(req.provider()).thenReturn(AuthProvider.MICROSOFT);
-        when(req.providerId()).thenReturn("ms-123");
-        when(req.name()).thenReturn("Provided Name");
-        when(req.picture()).thenReturn("provided-pic");
-        when(req.email()).thenReturn("u@e.com");
-        when(req.emailVerified()).thenReturn(true);
+    CreateUserRequest req = new CreateUserRequest(
+        AuthProvider.MICROSOFT,
+        "ms-123",
+        "u@e.com",
+        "Provided Name",
+        "provided-pic",
+        true
+    );
 
         when(userRepository.findByProviderAndProviderId(AuthProvider.MICROSOFT, "ms-123"))
                 .thenReturn(Optional.empty());
@@ -136,13 +139,14 @@ class UserServiceTest {
 
     @Test
     void getOrCreateFromOAuth_createsNewWhenNoMatch() {
-        CreateUserRequest req = mock(CreateUserRequest.class);
-        when(req.provider()).thenReturn(AuthProvider.GOOGLE);
-        when(req.providerId()).thenReturn("new-prov");
-        when(req.name()).thenReturn("NameX");
-        when(req.picture()).thenReturn("picX");
-        when(req.email()).thenReturn("nx@e.com");
-        when(req.emailVerified()).thenReturn(false);
+    CreateUserRequest req = new CreateUserRequest(
+        AuthProvider.GOOGLE,
+        "new-prov",
+        "nx@e.com",
+        "NameX",
+        "picX",
+        false
+    );
 
         when(userRepository.findByProviderAndProviderId(AuthProvider.GOOGLE, "new-prov"))
                 .thenReturn(Optional.empty());
@@ -177,10 +181,7 @@ class UserServiceTest {
         when(userRepository.findById(id)).thenReturn(Optional.of(existing));
         when(userRepository.save(existing)).thenAnswer(i -> i.getArgument(0));
 
-        UpdateUserRequest req = mock(UpdateUserRequest.class);
-        when(req.name()).thenReturn("new-name");
-        when(req.picture()).thenReturn(null);
-        when(req.roles()).thenReturn("ROLE_ADMIN");
+    UpdateUserRequest req = new UpdateUserRequest("new-name", null, "ROLE_ADMIN");
 
         User res = userService.updateProfile(id, req);
 
@@ -195,7 +196,7 @@ class UserServiceTest {
         UUID id = UUID.randomUUID();
         when(userRepository.findById(id)).thenReturn(Optional.empty());
 
-        UpdateUserRequest req = mock(UpdateUserRequest.class);
+    UpdateUserRequest req = new UpdateUserRequest(null, null, null);
 
         assertThrows(IllegalArgumentException.class, () -> userService.updateProfile(id, req));
     }

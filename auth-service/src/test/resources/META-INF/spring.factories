@@ -1,0 +1,3 @@
+# Test-only auto-configuration registration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.littlebook.auth.config.AuthTestAutoConfiguration

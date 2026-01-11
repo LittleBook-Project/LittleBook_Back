@@ -1,5 +1,6 @@
 package com.littlebook.auth.security;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import com.littlebook.auth.client.AdminServiceClient;
@@ -9,12 +10,10 @@ import com.littlebook.auth.dto.LoginRecordRequest;
 import com.littlebook.auth.dto.UserResponse;
 import com.littlebook.auth.enums.AuthProvider;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -28,26 +27,23 @@ import static org.mockito.Mockito.*;
 /**
  * Tests unitaires pour FirebaseTokenFilter - vérifie la synchronisation avec user-service
  */
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class FirebaseTokenFilterTest {
 
-    @Mock
-    private FirebaseAuth firebaseAuth;
-
-    @Mock
-    private UserServiceClient userServiceClient;
-
-    @Mock
-    private AdminServiceClient adminServiceClient;
-
-    @InjectMocks
+    @Autowired
     private FirebaseTokenFilter filter;
 
-    @Captor
-    private ArgumentCaptor<CreateUserRequest> requestCaptor;
+    @MockBean
+    private FirebaseAuth firebaseAuth;
 
-    @Captor
-    private ArgumentCaptor<LoginRecordRequest> loginCaptor;
+    @MockBean
+    private FirebaseApp firebaseApp;
+
+    @MockBean
+    private UserServiceClient userServiceClient;
+
+    @MockBean
+    private AdminServiceClient adminServiceClient;
 
     @Test
     void successful_google_login_syncs_user_to_user_service() throws Exception {
@@ -76,11 +72,13 @@ class FirebaseTokenFilterTest {
         // Act
         filter.doFilterInternal(request, response, chain);
 
-        // Assert - vérifie que userServiceClient a été appelé
-        verify(userServiceClient, times(1)).syncUser(requestCaptor.capture());
-        verify(adminServiceClient, times(1)).recordLogin(eq(java.util.UUID.fromString("00000000-0000-0000-0000-000000000123")), loginCaptor.capture());
-        
-        CreateUserRequest capturedRequest = requestCaptor.getValue();
+    // Assert - vérifie que userServiceClient a été appelé
+    ArgumentCaptor<CreateUserRequest> requestCaptor = ArgumentCaptor.forClass(CreateUserRequest.class);
+    ArgumentCaptor<LoginRecordRequest> loginCaptor = ArgumentCaptor.forClass(LoginRecordRequest.class);
+    verify(userServiceClient, times(1)).syncUser(requestCaptor.capture());
+    verify(adminServiceClient, times(1)).recordLogin(eq(java.util.UUID.fromString("00000000-0000-0000-0000-000000000123")), loginCaptor.capture());
+
+    CreateUserRequest capturedRequest = requestCaptor.getValue();
         assertEquals(AuthProvider.GOOGLE, capturedRequest.provider());
         assertEquals("google-uid-123", capturedRequest.providerId());
         assertEquals("user@gmail.com", capturedRequest.email());
@@ -117,10 +115,12 @@ class FirebaseTokenFilterTest {
         filter.doFilterInternal(request, response, chain);
 
         // Assert
-        verify(userServiceClient, times(1)).syncUser(requestCaptor.capture());
-        verify(adminServiceClient, times(1)).recordLogin(eq(java.util.UUID.fromString("00000000-0000-0000-0000-000000000456")), loginCaptor.capture());
+    ArgumentCaptor<CreateUserRequest> requestCaptor = ArgumentCaptor.forClass(CreateUserRequest.class);
+    ArgumentCaptor<LoginRecordRequest> loginCaptor = ArgumentCaptor.forClass(LoginRecordRequest.class);
+    verify(userServiceClient, times(1)).syncUser(requestCaptor.capture());
+    verify(adminServiceClient, times(1)).recordLogin(eq(java.util.UUID.fromString("00000000-0000-0000-0000-000000000456")), loginCaptor.capture());
 
-        CreateUserRequest capturedRequest = requestCaptor.getValue();
+    CreateUserRequest capturedRequest = requestCaptor.getValue();
         assertEquals(AuthProvider.MICROSOFT, capturedRequest.provider());
         assertEquals("ms-uid-456", capturedRequest.providerId());
         assertEquals("user@outlook.com", capturedRequest.email());
