@@ -1,0 +1,51 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: notification-service
+
+  main:
+    banner-mode: console
+    lazy-initialization: false
+
+  datasource:
+    url: jdbc:h2:mem:notificationdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        globally_quoted_identifiers: true
+
+  # Enable automatic execution of SQL scripts for data initialization
+  sql:
+    init:
+      mode: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# Firebase config (use environment variables)
+app:
+  firebase:
+    credentials-path: ${FIREBASE_CREDENTIALS:}
+    project-id: ${FIREBASE_PROJECT_ID:}
+
+# OpenLibrary API configuration
+openlibrary:
+  api:
+    base-url: https://openlibrary.org/search.json
+    timeout: 5000                          # milliseconds
+    max-retries: 3

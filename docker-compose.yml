@@ -147,3 +147,19 @@ services:
       - littlebook-network
     restart: unless-stopped
 
+  # ========================================
+  # 🔔 SERVICE NOTIFICATIONS
+  # ========================================
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: littlebook_notification
+    ports:
+      - "8087:8087"
+    environment:
+      - SERVER_PORT=8087
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - littlebook-network  
+    restart: unless-stopped
