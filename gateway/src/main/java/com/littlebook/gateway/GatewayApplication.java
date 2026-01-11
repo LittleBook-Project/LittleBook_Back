@@ -34,6 +34,9 @@ public class GatewayApplication {
       .route("admin-route", r -> r
         .path("/api/admin/**")
         .uri("http://admin-service:8085"))
+      .route("notification-route", r -> r
+        .path("/api/notification/**")
+        .uri("http://notification-service:8087"))
       .build();
   }
 }
