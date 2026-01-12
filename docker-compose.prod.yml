@@ -71,6 +71,34 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+  
+  notification-service:
+    image: ghcr.io/littlebook-project/littlebook-notification-service:latest
+    container_name: littlebook_notification
+    ports:
+      - "8087:8087"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+  
+  recommendation-service:
+    image: ghcr.io/littlebook-project/littlebook-recommendation-service:latest
+    container_name: littlebook_recommendation
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  
 
 secrets:
   firebase_credentials:
